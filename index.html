@@ -3,62 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simulador de CPU - Suma A + B</title>
+    <title>Simulador de CPU - Arquitectura Clásica</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Estilos para las fuentes y tema oscuro */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap');
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #111827; /* gray-900 */
-            color: #d1d5db; /* gray-300 */
+            background-color: #111827;
+            color: #d1d5db;
         }
-        .mono {
-            font-family: 'Roboto Mono', monospace;
-        }
-        /* Clases para destacar componentes y buses */
-        .highlight-component {
-            background-color: #facc15 !important; /* yellow-400 */
-            color: #1f2937 !important; /* gray-800 */
-            transition: all 0.3s ease-in-out;
-            transform: scale(1.05);
-            box-shadow: 0 0 15px #facc15;
-        }
-        .highlight-bus-address {
-            background-color: #ef4444 !important; /* red-500 */
-            transition: background-color 0.3s ease-in-out;
-        }
-        .highlight-bus-data {
-            background-color: #3b82f6 !important; /* blue-500 */
-            transition: background-color 0.3s ease-in-out;
-        }
-        .highlight-bus-control {
-             background-color: #22c55e !important; /* green-500 */
-            transition: background-color 0.3s ease-in-out;
-        }
+        .mono { font-family: 'Roboto Mono', monospace; }
         .component {
-            border: 2px solid #4b5563; /* gray-600 */
+            border: 2px solid #4b5563;
             border-radius: 0.5rem;
-            padding: 0.75rem;
-            background-color: #1f2937; /* gray-800 */
+            padding: 0.5rem;
+            background-color: #1f2937;
             transition: all 0.3s ease-in-out;
-            min-height: 60px;
+            position: absolute;
+            text-align: center;
+            z-index: 10;
         }
         .bus {
             position: absolute;
-            background-color: #4b5563; /* gray-600 */
-            z-index: -1;
+            background-color: #6b7280;
+            z-index: 1;
+            transition: background-color 0.3s ease-in-out;
         }
+        .bus-label {
+            position: absolute;
+            font-weight: bold;
+            z-index: 2;
+            text-shadow: 0 0 5px #111827;
+        }
+        .bus-main {
+             background-color: #374151;
+             z-index: 0;
+        }
+        .highlight-component {
+            background-color: #facc15 !important;
+            color: #1f2937 !important;
+            transform: scale(1.05);
+            box-shadow: 0 0 15px #facc15;
+        }
+        .highlight-bus-address { background-color: #ef4444 !important; }
+        .highlight-bus-data { background-color: #3b82f6 !important; }
+        .highlight-bus-control { background-color: #22c55e !important; }
     </style>
 </head>
 <body class="p-4 md:p-8">
     <div class="max-w-7xl mx-auto">
         <header class="text-center mb-8">
             <h1 class="text-3xl md:text-4xl font-bold text-white">Simulador de CPU</h1>
-            <p class="text-lg text-gray-400">Visualización de la suma A + B a nivel de microprocesador</p>
+            <p class="text-lg text-gray-400">Visualización de la suma A + B con arquitectura de microprocesador</p>
         </header>
 
-        <!-- Controles de la simulación -->
+        <!-- Controles -->
         <div class="bg-gray-800 p-4 rounded-lg shadow-lg mb-8 flex flex-col sm:flex-row items-center justify-center gap-4">
             <div class="flex items-center gap-2">
                 <label for="valA" class="font-medium text-white">Valor A:</label>
@@ -68,127 +67,85 @@
                 <label for="valB" class="font-medium text-white">Valor B:</label>
                 <input type="number" id="valB" value="3" class="w-24 bg-gray-700 text-white rounded p-2 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-yellow-400">
             </div>
-            <button id="startSim" class="w-full sm:w-auto bg-yellow-400 text-gray-900 font-bold py-2 px-6 rounded-lg hover:bg-yellow-300 transition-colors">Iniciar Simulación</button>
+            <button id="autoRunBtn" class="w-full sm:w-auto bg-yellow-400 text-gray-900 font-bold py-2 px-6 rounded-lg hover:bg-yellow-300 transition-colors">Ejecución Automática</button>
+            <button id="nextStepBtn" class="w-full sm:w-auto bg-blue-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-400 transition-colors">Siguiente Paso</button>
             <button id="resetSim" class="w-full sm:w-auto bg-red-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-red-400 transition-colors">Reiniciar</button>
         </div>
 
-        <!-- Diagrama y Log (Stacked Layout) -->
+        <!-- Layout Principal -->
         <div class="flex flex-col gap-8">
-            <!-- Diagrama del Microprocesador (Ahora ocupa todo el ancho) -->
-            <div class="relative border-4 border-gray-700 rounded-xl p-4 md:p-8 min-h-[600px] bg-black bg-opacity-20" id="diagram-container">
-                <h2 class="absolute top-2 left-4 text-xl font-bold text-gray-400">Microprocesador de 8 bits</h2>
-
-                <!-- Buses (Unchanged) -->
-                <div id="bus-pc-addr" class="bus" style="width: 2px; height: 130px; top: 100px; left: 140px;"></div>
-                <div id="bus-uc-addr" class="bus" style="width: 2px; height: 130px; top: 220px; left: 140px;"></div>
-                <div id="bus-ri-uc" class="bus" style="width: 120px; height: 2px; top: 160px; left: 200px;"></div>
-                <div id="bus-uc-alu" class="bus" style="width: 120px; height: 2px; top: 320px; left: 200px;"></div>
+            <!-- Diagrama -->
+            <div class="relative w-full border-4 border-gray-700 rounded-xl min-h-[700px] p-4 bg-gray-900 bg-opacity-50">
                 
-                <!-- Conexiones ALU/Registros ajustadas para la parte inferior -->
-                <div id="bus-acum-alu" class="bus" style="width: 2px; height: 60px; bottom: 130px; left: 450px;"></div>
-                <div id="bus-op2-alu" class="bus" style="width: 2px; height: 60px; bottom: 130px; left: 550px;"></div>
-                <div id="bus-alu-acum" class="bus" style="width: 100px; height: 2px; top: 290px; left: 350px;"></div>
-                <div id="bus-datos-main" class="bus" style="width: 2px; height: 450px; top: 100px; right: 150px;"></div>
-                 
-                <!-- Componentes -->
-                <!-- El contenedor interno tiene un max-width y está centrado -->
-                <div class="grid grid-cols-3 gap-x-8 gap-y-12 relative z-10 mx-auto" style="max-width: 600px;">
-                    <!-- Columna 1: Control (Parte Superior) -->
-                    <div id="pc" class="component col-span-1">
-                        <h3 class="font-bold text-center">Contador de Programa (PC)</h3>
-                        <p class="mono text-center text-lg mt-1">0x1000</p>
-                    </div>
-                    <div id="ri" class="component col-span-1">
-                         <h3 class="font-bold text-center">Registro de Instrucción (RI)</h3>
-                        <p class="mono text-center text-lg mt-1">-</p>
-                    </div>
-                    <div id="uc" class="component col-span-1 row-span-2 flex flex-col justify-center">
-                        <h3 class="font-bold text-center">Unidad de Control (UC)</h3>
-                         <p class="mono text-center text-sm mt-1">Decodificando...</p>
-                    </div>
-
-                    <!-- Columna 2: ALU (Parte Media) -->
-                    <div id="alu" class="component col-span-3 flex items-center justify-center mt-16 mb-16">
-                        <h3 class="font-bold text-center text-2xl">ALU</h3>
-                    </div>
-
-                    <!-- Columna 3: Registros (Parte Inferior) -->
-                    <div id="acumulador" class="component col-span-1" style="grid-column: 1 / span 1;">
-                        <h3 class="font-bold text-center">Acumulador</h3>
-                        <p class="mono text-center text-lg mt-1">0</p>
-                    </div>
-                     <div id="operando2" class="component col-span-1" style="grid-column: 3 / span 1;">
-                        <h3 class="font-bold text-center">Operando 2</h3>
-                        <p class="mono text-center text-lg mt-1">0</p>
-                    </div>
+                <!-- Contenedor del Microprocesador -->
+                <div class="absolute inset-x-32 top-8 bottom-48 border-2 border-dashed border-gray-600 rounded-lg">
+                     <h2 class="absolute top-2 left-4 text-xl font-bold text-gray-500">Microprocesador de 8 bits</h2>
                 </div>
 
-                 <!-- Buses Externos -->
-                <div class="absolute bottom-[-60px] w-full left-0">
-                    <div class="relative h-16">
-                        <div id="bus-direcciones" class="absolute left-[140px] top-[-380px] h-[400px] w-2 bg-gray-600"></div>
-                        <div id="bus-datos" class="absolute right-[150px] top-[-480px] h-[500px] w-2 bg-gray-600"></div>
-                        <div id="bus-control" class="absolute left-1/2 top-[-200px] h-[220px] w-2 bg-gray-600"></div>
-                        <p class="absolute left-[90px] top-2 text-red-500 font-bold -rotate-90">BUS DE DIRECCIONES</p>
-                        <p class="absolute right-[100px] top-2 text-blue-500 font-bold -rotate-90">BUS DE DATOS</p>
-                        <p class="absolute left-[48%] top-2 text-green-500 font-bold -rotate-90">BUS DE CONTROL</p>
-                    </div>
-                </div>
+                <!-- Buses Principales (Ejes Centrales) -->
+                <div class="bus bus-main" style="left: 10%; right: 10%; top: 250px; height: 10px;"></div> <!-- Eje Horizontal -->
+                <div id="bus-main-vert" class="bus bus-main" style="top: 100px; bottom: 100px; left: 48%; width: 10px;"></div> <!-- Eje Vertical -->
+
+                <!-- COMPONENTES -->
+                <div id="pc" class="component" style="top: 100px; left: 10%;"><h3 class="font-bold">Contador (PC)</h3><p class="mono mt-1">0x1000</p></div>
+                <div id="ri" class="component" style="top: 320px; left: 10%;"><h3 class="font-bold">Registro Inst. (RI)</h3><p class="mono mt-1">-</p></div>
+                <div id="uc" class="component" style="top: 160px; left: 35%; width: 120px;"><h3 class="font-bold">Unidad Control (UC)</h3></div>
+                <div id="acumulador" class="component" style="top: 320px; left: 30%;"><h3 class="font-bold">Acumulador</h3><p class="mono mt-1">0</p></div>
+                <div id="operando2" class="component" style="top: 320px; left: 55%;"><h3 class="font-bold">Operando 2</h3><p class="mono mt-1">0</p></div>
+                <div id="alu" class="component" style="top: 300px; right: 15%; width: 100px; height: 100px;"><h3 class="font-bold text-xl">ALU</h3></div>
+                <div id="memoria" class="component" style="bottom: 10px; left: 10%; width: 200px; height: 150px;"><h3 class="font-bold">Memoria</h3><div id="memoria-content" class="text-left overflow-y-auto h-28 mt-1 bg-gray-800 p-1 rounded"></div></div>
+                <div class="component" style="bottom: 10px; right: 10%;"><h3 class="font-bold">Entradas/Salidas</h3></div>
+
+                <!-- BUSES DE CONEXIÓN Y ETIQUETAS -->
+                <!-- Bus de Direcciones (Rojo) -->
+                <div id="bus-addr-pc-horz" class="bus" style="top: 120px; left: 20%; width: 28%; height: 6px;"></div>
+                <div id="bus-addr-main-vert" class="bus" style="bottom: 160px; left: 15%; width: 6px; height: 200px;"></div>
+                <div id="bus-addr-main-horz" class="bus" style="bottom: 354px; left: 15%; width: 33%; height: 6px;"></div>
+                <p class="bus-label text-red-500" style="top: 95px; left: 25%;">BUS DE DIRECCIONES</p>
+
+                <!-- Bus de Datos (Azul) -->
+                <div id="bus-data-ext-horz" class="bus" style="bottom: 300px; left: 20%; width: 28%; height: 6px;"></div>
+                <div id="bus-data-ext-vert" class="bus" style="bottom: 160px; left: 20%; width: 6px; height: 140px;"></div>
+                <div id="bus-data-main-horz" class="bus" style="top: 380px; left: 20%; right: 25%; height: 6px;"></div>
+                <div id="bus-data-ri-conn" class="bus" style="left: 15%; top: 360px; height: 26px; width: 6px;"></div>
+                <div id="bus-data-acum-conn" class="bus" style="left: 35%; top: 360px; height: 26px; width: 6px;"></div>
+                <div id="bus-data-op2-conn" class="bus" style="left: 60%; top: 360px; height: 26px; width: 6px;"></div>
+                <div id="bus-data-alu-out" class="bus" style="top: 350px; right: 25%; width: 10%; height: 6px;"></div>
+                <div id="bus-data-alu-out-vert" class="bus" style="right: 25%; top: 350px; height: 36px; width: 6px;"></div>
+                <p class="bus-label text-blue-500" style="top: 400px; left: 22%;">BUS DE DATOS</p>
+                
+                <!-- Bus de Control (Verde) -->
+                <div id="bus-ctrl-uc-main" class="bus" style="top: 200px; left: 41%; width: 6px; height: 50px;"></div>
+                <div id="bus-ctrl-bridge" class="bus" style="top: 180px; left: 41%; width: 7%; height: 6px;"></div>
+                <div id="bus-ctrl-main-ext" class="bus" style="bottom: 80px; left: 55%; width: 6px; height: 200px;"></div>
+                <div id="bus-ctrl-bridge-2" class="bus" style="bottom: 274px; left: 48%; width: 8%; height: 6px;"></div>
+                 <p class="bus-label text-green-500" style="bottom: 150px; right: 38%; transform: rotate(-90deg);">BUS DE CONTROL</p>
             </div>
 
-            <!-- Contenedor para Memoria y Log (Full Width, ahora debajo) -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <!-- Memoria (Columna 1) -->
-                 <div class="md:col-span-1">
-                    <h3 class="text-xl font-bold text-white mb-2">Memoria</h3>
-                    <div id="memoria" class="component w-full h-96 overflow-y-auto p-2 bg-gray-900">
-                       <!-- El contenido se genera con JS -->
-                    </div>
-                </div>
-
-                <!-- Log de la Simulación (Columnas 2 y 3) -->
-                <div class="md:col-span-2">
-                    <div id="log" class="component w-full min-h-[300px] bg-gray-900 p-4 overflow-y-auto">
-                        <h2 class="text-xl font-bold text-white mb-4 border-b border-gray-700 pb-2">Registro de Simulación</h2>
-                        <div id="log-content">
-                            <p class="text-gray-500">Esperando inicio de la simulación...</p>
-                        </div>
-                    </div>
-                </div>
+            <!-- Log -->
+            <div id="log" class="component w-full min-h-[300px] bg-gray-900 p-4 overflow-y-auto" style="position: relative;">
+                <h2 class="text-xl font-bold text-white mb-4 border-b border-gray-700 pb-2">Registro de Simulación</h2>
+                <div id="log-content"><p class="text-gray-500">Esperando inicio...</p></div>
             </div>
         </div>
     </div>
 
     <script>
         // --- DOM Elements ---
+        const autoRunBtn = document.getElementById('autoRunBtn');
+        const nextStepBtn = document.getElementById('nextStepBtn');
+        const resetBtn = document.getElementById('resetSim');
         const valAInput = document.getElementById('valA');
         const valBInput = document.getElementById('valB');
-        const startBtn = document.getElementById('startSim');
-        const resetBtn = document.getElementById('resetSim');
         const logContent = document.getElementById('log-content');
+        const pcEl = document.getElementById('pc'), riEl = document.getElementById('ri'), ucEl = document.getElementById('uc'), aluEl = document.getElementById('alu'), acumuladorEl = document.getElementById('acumulador'), operando2El = document.getElementById('operando2'), memoriaEl = document.getElementById('memoria-content');
+
+        // --- Simulation State & Config ---
+        let memory = {}, pc = 0x1000, acumulador = 0, operando2 = 0;
+        const ADDR_A = '0x0001', ADDR_B = '0x0002', ADDR_RESULT = '0x0003', PROG_START = 0x1000, SIM_SPEED = 750;
+        let stepQueue = [];
+        let isAutoRunning = false;
         
-        const pcEl = document.getElementById('pc');
-        const riEl = document.getElementById('ri');
-        const ucEl = document.getElementById('uc');
-        const aluEl = document.getElementById('alu');
-        const acumuladorEl = document.getElementById('acumulador');
-        const operando2El = document.getElementById('operando2');
-        const memoriaEl = document.getElementById('memoria');
-
-        // --- Simulation State ---
-        let simulationRunning = false;
-        let memory = {};
-        let pc = 0x1000;
-        let acumulador = 0;
-        let operando2 = 0;
-
-        // --- Simulation Configuration ---
-        const ADDR_A = '0x0001';
-        const ADDR_B = '0x0002';
-        const ADDR_RESULT = '0x0003';
-        const PROG_START = 0x1000;
-        const SIM_SPEED = 750; // ms
-
         const program = [
             { addr: '0x1000', inst: 'LOAD_A', val: ADDR_A, desc: `Cargar Acumulador desde dir. ${ADDR_A}`},
             { addr: '0x1001', inst: 'ADD', val: ADDR_B, desc: `Sumar valor de dir. ${ADDR_B}`},
@@ -197,205 +154,183 @@
         ];
 
         // --- Functions ---
-
         function setupMemory() {
             memory = {};
-            const valA = parseInt(valAInput.value, 10) || 0;
-            const valB = parseInt(valBInput.value, 10) || 0;
-
-            memory[ADDR_A] = valA;
-            memory[ADDR_B] = valB;
+            memory[ADDR_A] = parseInt(valAInput.value, 10) || 0;
+            memory[ADDR_B] = parseInt(valBInput.value, 10) || 0;
             memory[ADDR_RESULT] = 0;
-            
-            program.forEach(p => {
-                memory[p.addr] = p;
-            });
-
+            program.forEach(p => { memory[p.addr] = p; });
             renderMemory();
         }
-
         function renderMemory() {
             memoriaEl.innerHTML = '';
-            const dataAddresses = Object.keys(memory).filter(k => typeof memory[k] === 'number').sort();
-            const programAddresses = Object.keys(memory).filter(k => typeof memory[k] === 'object').sort();
-
-            dataAddresses.forEach(addr => {
-                 memoriaEl.innerHTML += `<div id="mem-${addr}" class="mono p-1 rounded bg-gray-800"><b>${addr}:</b> ${memory[addr]}</div>`;
-            });
-             memoriaEl.innerHTML += `<div class="my-2 border-t border-gray-700"></div>`;
-            programAddresses.forEach(addr => {
-                 memoriaEl.innerHTML += `<div id="mem-${addr}" class="mono p-1 rounded bg-gray-800"><b>${addr}:</b> ${memory[addr].inst}</div>`;
+            Object.keys(memory).sort().forEach(addr => {
+                const val = memory[addr];
+                const displayVal = typeof val === 'object' ? val.inst : val;
+                 memoriaEl.innerHTML += `<div id="mem-${addr}" class="mono p-1 rounded"><b>${addr}:</b> ${displayVal}</div>`;
             });
         }
-        
-        function updateRegister(el, value) {
-            el.querySelector('p').textContent = value;
-        }
-
-        function addLog(message) {
-            logContent.innerHTML += `<p class="mb-2 p-2 bg-gray-800 rounded-md shadow animate-fade-in">${message}</p>`;
+        function updateRegister(el, value) { el.querySelector('p').textContent = value; }
+        function addLog(message, isStep = true) {
+             const stepPrefix = isStep ? `[Paso ${logContent.children.length + 1}] ` : '';
+            logContent.innerHTML += `<p class="mb-2 p-2 bg-gray-800 rounded-md shadow">${stepPrefix}${message}</p>`;
             logContent.scrollTop = logContent.scrollHeight;
         }
 
+        const busPaths = {
+            address: ['bus-addr-pc-horz', 'bus-main-vert', 'bus-addr-main-horz', 'bus-addr-main-vert'],
+            data: ['bus-data-ext-vert', 'bus-data-ext-horz', 'bus-main-vert', 'bus-data-main-horz', 'bus-data-ri-conn', 'bus-data-acum-conn', 'bus-data-op2-conn', 'bus-data-alu-out', 'bus-data-alu-out-vert'],
+            control: ['bus-ctrl-uc-main', 'bus-ctrl-bridge', 'bus-main-vert', 'bus-ctrl-bridge-2', 'bus-ctrl-main-ext']
+        };
         function highlight(elements, type = 'component') {
-            const classMap = {
-                component: 'highlight-component',
-                address: 'highlight-bus-address',
-                data: 'highlight-bus-data',
-                control: 'highlight-bus-control'
-            };
+            const highlightClass = `highlight-${type}`;
             elements.forEach(id => {
                 const el = document.getElementById(id);
-                if (el) el.classList.add(classMap[type]);
+                if (el) el.classList.add(highlightClass);
             });
         }
-
         function unhighlightAll() {
-            document.querySelectorAll('.highlight-component, .highlight-bus-address, .highlight-bus-data, .highlight-bus-control').forEach(el => {
-                el.classList.remove('highlight-component', 'highlight-bus-address', 'highlight-bus-data', 'highlight-bus-control');
-                el.style.transform = '';
-            });
+            const classes = ['highlight-component', 'highlight-bus-address', 'highlight-bus-data', 'highlight-bus-control'];
+            document.querySelectorAll('.' + classes.join(', .')).forEach(el => el.classList.remove(...classes));
         }
         
-        // --- Animation Helper ---
-        const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
-        async function executeInstruction(instruction) {
-             const operandAddr = instruction.val;
-             const operandVal = memory[operandAddr];
-
-            switch(instruction.inst) {
-                case 'LOAD_A':
-                    addLog(`➡️ **EXEC [LOAD_A]**: Obteniendo valor de la dir. ${operandAddr}.`);
-                    highlight(['uc', 'bus-direcciones', 'mem-' + operandAddr], 'component');
-                    highlight(['bus-direcciones'], 'address');
-                    await wait(SIM_SPEED);
-
-                    unhighlightAll();
-                    addLog(`⬅️ **EXEC [LOAD_A]**: El valor (${operandVal}) viaja por el Bus de Datos al Acumulador.`);
-                    highlight(['mem-' + operandAddr, 'bus-datos', 'acumulador'], 'component');
-                    highlight(['bus-datos'], 'data');
-                    acumulador = operandVal;
-                    updateRegister(acumuladorEl, acumulador);
-                    await wait(SIM_SPEED);
-                    break;
-                
-                case 'ADD':
-                    addLog(`➡️ **EXEC [ADD]**: Obteniendo valor de la dir. ${operandAddr}.`);
-                    highlight(['uc', 'bus-direcciones', 'mem-' + operandAddr], 'component');
-                    highlight(['bus-direcciones'], 'address');
-                    await wait(SIM_SPEED);
-                    
-                    unhighlightAll();
-                    addLog(`⬅️ **EXEC [ADD]**: El valor (${operandVal}) viaja al registro Operando 2.`);
-                    highlight(['mem-' + operandAddr, 'bus-datos', 'operando2'], 'component');
-                    highlight(['bus-datos'], 'data');
-                    operando2 = operandVal;
-                    updateRegister(operando2El, operando2);
-                    await wait(SIM_SPEED);
-                       
-                    unhighlightAll();
-                    addLog(`➕ **EXEC [ADD]**: La ALU suma Acumulador (${acumulador}) y Operando 2 (${operando2}).`);
-                    highlight(['acumulador', 'operando2', 'alu', 'uc'], 'component');
-                    highlight(['bus-control'], 'control');
-                    const sumResult = Number(acumulador) + Number(operando2);
-                    await wait(SIM_SPEED);
-                           
-                    unhighlightAll();
-                    addLog(`🔄 **EXEC [ADD]**: El resultado (${sumResult}) se guarda de vuelta en el Acumulador.`);
-                    acumulador = sumResult; 
-                    highlight(['alu', 'acumulador'], 'component');
-                    updateRegister(acumuladorEl, acumulador);
-                    await wait(SIM_SPEED);
-                    break;
-                
-                case 'STORE':
-                    addLog(`➡️ **EXEC [STORE]**: La dirección de destino (${operandAddr}) se pone en el Bus de Direcciones.`);
-                    highlight(['uc', 'bus-direcciones', 'mem-' + operandAddr], 'component');
-                    highlight(['bus-direcciones'], 'address');
-                    await wait(SIM_SPEED);
-                    
-                    unhighlightAll();
-                    addLog(`⬅️ **EXEC [STORE]**: El resultado del Acumulador (${acumulador}) se pone en el Bus de Datos.`);
-                    highlight(['acumulador', 'bus-datos'], 'component');
-                    highlight(['bus-datos'], 'data');
-                    await wait(SIM_SPEED);
-                    
-                    unhighlightAll();
-                    addLog(`💾 **EXEC [STORE]**: La UC envía señal de 'escribir' y se guarda el valor en memoria.`);
-                    highlight(['uc', 'bus-control', 'mem-' + operandAddr], 'component');
-                    highlight(['bus-control'], 'control');
-                    memory[operandAddr] = acumulador;
-                    renderMemory();
-                    document.getElementById('mem-' + operandAddr).classList.add('highlight-component');
-                    await wait(SIM_SPEED);
-                    break;
-            }
+        function addStep(logMessage, actionFn) {
+            stepQueue.push(async () => {
+                unhighlightAll();
+                addLog(logMessage);
+                if (actionFn) actionFn();
+            });
         }
 
-        // --- Main Simulation Loop (Refactored) ---
-        async function runSimulationLoop() {
-            while (simulationRunning) {
-                unhighlightAll();
-                const currentPC = `0x${pc.toString(16)}`;
-                const instruction = memory[currentPC];
+        function prepareSimulation() {
+            stepQueue = [];
+            let tempPC = PROG_START;
+            let tempAcumulador = 0;
+            let tempOperando2 = 0;
 
-                if (!instruction || instruction.inst === 'HALT') {
-                    addLog("✅ **FIN:** Simulación completada.");
-                    highlight(['mem-' + ADDR_RESULT]);
-                    simulationRunning = false;
-                    break; 
+            for(const instruction of program) {
+                 if (instruction.inst === 'HALT') {
+                    addStep("✅ **FIN:** Simulación completada.", () => {
+                        highlight(['mem-' + ADDR_RESULT]);
+                        disableButtons();
+                    });
+                    break;
                 }
-
+                const currentPCStr = `0x${tempPC.toString(16)}`;
+                const operandAddr = instruction.val;
+                
                 // --- FETCH ---
-                addLog(`🔎 **FETCH [${instruction.inst}]**: PC (${currentPC}) -> Bus Direcciones.`);
-                updateRegister(pcEl, currentPC);
-                highlight(['pc', 'bus-direcciones', 'mem-' + currentPC], 'component');
-                highlight(['bus-direcciones'], 'address');
-                await wait(SIM_SPEED);
-                unhighlightAll();
-
-                addLog(`📥 **FETCH**: Memoria -> Bus Datos -> RI.`);
-                highlight(['mem-' + currentPC, 'bus-datos', 'ri'], 'component');
-                highlight(['bus-datos'], 'data');
-                updateRegister(riEl, `${instruction.inst} ${instruction.val || ''}`);
-                pc++; 
-                updateRegister(pcEl, `0x${pc.toString(16)}`);
-                await wait(SIM_SPEED);
-                unhighlightAll();
+                addStep(`🔎 **FETCH [${instruction.inst}]**: PC (${currentPCStr}) -> Bus Direcciones.`, () => {
+                    updateRegister(pcEl, currentPCStr);
+                    highlight(['pc', 'memoria', ...busPaths.address], 'bus-address');
+                    highlight(['pc', 'memoria']);
+                });
+                addStep(`📥 **FETCH**: Memoria -> Bus Datos -> RI.`, () => {
+                    highlight(['memoria', 'ri', ...busPaths.data], 'bus-data');
+                    highlight(['memoria', 'ri']);
+                    updateRegister(riEl, `${instruction.inst} ${instruction.val || ''}`);
+                    updateRegister(pcEl, `0x${(tempPC + 1).toString(16)}`);
+                });
                 
                 // --- DECODE ---
-                addLog(`🤔 **DECODE**: UC decodifica: "${instruction.desc}".`);
-                highlight(['uc', 'ri'], 'component');
-                await wait(SIM_SPEED);
-                unhighlightAll();
+                addStep(`🤔 **DECODE**: UC decodifica: "${instruction.desc}".`, () => {
+                     highlight(['uc', 'ri']);
+                });
 
                 // --- EXECUTE ---
-                await executeInstruction(instruction);
+                switch (instruction.inst) {
+                    case 'LOAD_A':
+                        const valA = memory[operandAddr];
+                        addStep(`➡️ **EXEC [LOAD_A]**: Obteniendo valor de la dir. ${operandAddr}.`, () => {
+                            highlight(['uc', 'memoria', ...busPaths.address], 'bus-address');
+                            highlight(['uc', 'memoria']);
+                        });
+                        addStep(`⬅️ **EXEC [LOAD_A]**: El valor (${valA}) viaja al Acumulador.`, () => {
+                            highlight(['memoria', 'acumulador', ...busPaths.data], 'bus-data');
+                            highlight(['memoria', 'acumulador']);
+                            tempAcumulador = valA;
+                            updateRegister(acumuladorEl, tempAcumulador);
+                        });
+                        break;
+                    case 'ADD':
+                         const valB = memory[operandAddr];
+                         addStep(`➡️ **EXEC [ADD]**: Obteniendo valor de la dir. ${operandAddr}.`, () => {
+                            highlight(['uc', 'memoria', ...busPaths.address], 'bus-address');
+                            highlight(['uc', 'memoria']);
+                        });
+                        addStep(`⬅️ **EXEC [ADD]**: El valor (${valB}) viaja al Operando 2.`, () => {
+                            highlight(['memoria', 'operando2', ...busPaths.data], 'bus-data');
+                            highlight(['memoria', 'operando2']);
+                            tempOperando2 = valB;
+                            updateRegister(operando2El, tempOperando2);
+                        });
+                        addStep(`➕ **EXEC [ADD]**: La ALU suma Acumulador (${tempAcumulador}) y Operando 2 (${tempOperando2}).`, () => {
+                            highlight(['acumulador', 'operando2', 'alu', 'uc', ...busPaths.control], 'bus-control');
+                            highlight(['acumulador', 'operando2', 'alu', 'uc']);
+                        });
+                        addStep(`🔄 **EXEC [ADD]**: El resultado (${Number(tempAcumulador) + Number(tempOperando2)}) se guarda en el Acumulador.`, () => {
+                            tempAcumulador = Number(tempAcumulador) + Number(tempOperando2);
+                            highlight(['alu', 'acumulador', ...busPaths.data], 'bus-data');
+                            highlight(['alu', 'acumulador']);
+                            updateRegister(acumuladorEl, tempAcumulador);
+                        });
+                        break;
+                    case 'STORE':
+                        addStep(`➡️ **EXEC [STORE]**: Enviando dirección de destino (${operandAddr}).`, () => {
+                             highlight(['uc', 'memoria', ...busPaths.address], 'bus-address');
+                            highlight(['uc', 'memoria']);
+                        });
+                        addStep(`⬅️ **EXEC [STORE]**: Enviando resultado (${tempAcumulador}) desde el Acumulador.`, () => {
+                             highlight(['acumulador', 'memoria', ...busPaths.data], 'bus-data');
+                            highlight(['acumulador', 'memoria']);
+                        });
+                        addStep(`💾 **EXEC [STORE]**: La UC envía señal de 'escribir'.`, () => {
+                             highlight(['uc', 'memoria', ...busPaths.control], 'bus-control');
+                            highlight(['uc', 'memoria']);
+                            memory[ADDR_RESULT] = tempAcumulador;
+                            renderMemory();
+                            document.getElementById('mem-' + ADDR_RESULT).classList.add('highlight-component');
+                        });
+                        break;
+                }
+                tempPC++;
             }
-            startBtn.disabled = false;
         }
 
-
-        // --- Event Listeners ---
-        startBtn.addEventListener('click', () => {
-            if (simulationRunning) return;
-            resetState();
-            setupMemory();
-            logContent.innerHTML = '<p class="text-gray-400">Iniciando simulación...</p>';
-            simulationRunning = true;
-            startBtn.disabled = true;
-            runSimulationLoop(); 
-        });
-
-        resetBtn.addEventListener('click', () => {
-            simulationRunning = false; 
-            resetState();
-            setupMemory();
-            startBtn.disabled = false;
-        });
+        async function executeNextStep() {
+            if (stepQueue.length > 0) {
+                nextStepBtn.disabled = true;
+                const step = stepQueue.shift();
+                await step();
+                if (stepQueue.length > 0) {
+                    nextStepBtn.disabled = false;
+                } else {
+                    disableButtons();
+                }
+            }
+        }
+        
+        async function autoRun() {
+            isAutoRunning = true;
+            disableButtons(true);
+            while(isAutoRunning && stepQueue.length > 0) {
+                const step = stepQueue.shift();
+                await step();
+                await new Promise(resolve => setTimeout(resolve, SIM_SPEED));
+            }
+            if (stepQueue.length === 0) {
+                 disableButtons();
+            }
+        }
+        
+        function disableButtons(autoRunning = false){
+            autoRunBtn.disabled = true;
+            nextStepBtn.disabled = true;
+            if(autoRunning) resetBtn.disabled = true;
+        }
 
         function resetState() {
+             isAutoRunning = false;
              unhighlightAll();
              pc = PROG_START;
              acumulador = 0;
@@ -404,11 +339,24 @@
              updateRegister(riEl, '-');
              updateRegister(acumuladorEl, '0');
              updateRegister(operando2El, '0');
-             logContent.innerHTML = '<p class="text-gray-500">Esperando inicio de la simulación...</p>';
+             logContent.innerHTML = '<p class="text-gray-500" style="text-align: center;">Presiona "Siguiente Paso" o "Ejecución Automática"</p>';
+             
+             setupMemory();
+             prepareSimulation();
+             
+             autoRunBtn.disabled = false;
+             nextStepBtn.disabled = false;
+             resetBtn.disabled = false;
         }
-
+        
+        // --- Event Listeners ---
+        autoRunBtn.addEventListener('click', autoRun);
+        nextStepBtn.addEventListener('click', executeNextStep);
+        resetBtn.addEventListener('click', resetState);
+        
         // --- Initial Setup ---
-        setupMemory();
+        resetState();
     </script>
 </body>
 </html>
+
