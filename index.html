@@ -89,12 +89,22 @@
                 <!-- COMPONENTES -->
                 <div id="pc" class="component" style="top: 100px; left: 10%;"><h3 class="font-bold">Contador (PC)</h3><p class="mono mt-1">0x1000</p></div>
                 <div id="ri" class="component" style="top: 320px; left: 10%;"><h3 class="font-bold">Registro Inst. (RI)</h3><p class="mono mt-1">-</p></div>
-                <div id="uc" class="component" style="top: 160px; left: 35%; width: 120px;"><h3 class="font-bold">Unidad Control (UC)</h3></div>
+                <div id="uc" class="component flex flex-col justify-center" style="top: 150px; left: 35%; width: 140px; height: 100px;">
+                    <h3 class="font-bold">Unidad Control</h3>
+                    <h4 class="font-semibold text-sm text-gray-400">(Decodificador)</h4>
+                    <p id="uc-opcode-display" class="mono text-yellow-300 mt-1">-</p>
+                </div>
                 <div id="acumulador" class="component" style="top: 320px; left: 30%;"><h3 class="font-bold">Acumulador</h3><p class="mono mt-1">0</p></div>
                 <div id="operando2" class="component" style="top: 320px; left: 55%;"><h3 class="font-bold">Operando 2</h3><p class="mono mt-1">0</p></div>
                 <div id="alu" class="component" style="top: 300px; right: 15%; width: 100px; height: 100px;"><h3 class="font-bold text-xl">ALU</h3></div>
                 <div id="memoria" class="component" style="bottom: 10px; left: 10%; width: 200px; height: 150px;"><h3 class="font-bold">Memoria</h3><div id="memoria-content" class="text-left overflow-y-auto h-28 mt-1 bg-gray-800 p-1 rounded"></div></div>
                 <div class="component" style="bottom: 10px; right: 10%;"><h3 class="font-bold">Entradas/Salidas</h3></div>
+                
+                <!-- Tabla de Codificación de Datos -->
+                <div id="data-encoding-table" class="component" style="top: 20px; right: 2%;">
+                    <h3 class="font-bold">Codificación de Datos</h3>
+                    <div id="encoding-content" class="text-left mono mt-1 text-sm"></div>
+                </div>
 
                 <!-- BUSES DE CONEXIÓN Y ETIQUETAS -->
                 <!-- Bus de Direcciones (Rojo) -->
@@ -115,7 +125,7 @@
                 <p class="bus-label text-blue-500" style="top: 400px; left: 22%;">BUS DE DATOS</p>
                 
                 <!-- Bus de Control (Verde) -->
-                <div id="bus-ctrl-uc-main" class="bus" style="top: 200px; left: 41%; width: 6px; height: 50px;"></div>
+                <div id="bus-ctrl-uc-main" class="bus" style="top: 250px; left: 41%; width: 6px; height: 0px;"></div>
                 <div id="bus-ctrl-bridge" class="bus" style="top: 180px; left: 41%; width: 7%; height: 6px;"></div>
                 <div id="bus-ctrl-main-ext" class="bus" style="bottom: 80px; left: 55%; width: 6px; height: 200px;"></div>
                 <div id="bus-ctrl-bridge-2" class="bus" style="bottom: 274px; left: 48%; width: 8%; height: 6px;"></div>
@@ -138,7 +148,9 @@
         const valAInput = document.getElementById('valA');
         const valBInput = document.getElementById('valB');
         const logContent = document.getElementById('log-content');
+        const encodingContent = document.getElementById('encoding-content');
         const pcEl = document.getElementById('pc'), riEl = document.getElementById('ri'), ucEl = document.getElementById('uc'), aluEl = document.getElementById('alu'), acumuladorEl = document.getElementById('acumulador'), operando2El = document.getElementById('operando2'), memoriaEl = document.getElementById('memoria-content');
+        const ucOpcodeDisplay = document.getElementById('uc-opcode-display');
 
         // --- Simulation State & Config ---
         let memory = {};
@@ -147,13 +159,25 @@
         let isAutoRunning = false;
         
         const program = [
-            { addr: '0x1000', inst: 'LOAD_A', val: ADDR_A, desc: `Cargar Acumulador desde dir. ${ADDR_A}`},
-            { addr: '0x1001', inst: 'ADD', val: ADDR_B, desc: `Sumar valor de dir. ${ADDR_B}`},
-            { addr: '0x1002', inst: 'STORE', val: ADDR_RESULT, desc: `Guardar resultado en dir. ${ADDR_RESULT}`},
-            { addr: '0x1003', inst: 'HALT', val: null, desc: 'Fin del programa' }
+            { addr: '0x1000', inst: 'LOAD_A', opcode: '00010001', val: ADDR_A, desc: `Cargar Acumulador desde dir. ${ADDR_A}`},
+            { addr: '0x1001', inst: 'ADD', opcode: '00100010', val: ADDR_B, desc: `Sumar valor de dir. ${ADDR_B}`},
+            { addr: '0x1002', inst: 'STORE', opcode: '00110011', val: ADDR_RESULT, desc: `Guardar resultado en dir. ${ADDR_RESULT}`},
+            { addr: '0x1003', inst: 'HALT', opcode: '11110000', val: null, desc: 'Fin del programa' }
         ];
 
         // --- Functions ---
+        function to8BitBinary(num) {
+            return num.toString(2).padStart(8, '0');
+        }
+        function updateEncodingTable() {
+            const valA = parseInt(valAInput.value, 10) || 0;
+            const valB = parseInt(valBInput.value, 10) || 0;
+            encodingContent.innerHTML = `
+                <p>Valor A (${valA}): ${to8BitBinary(valA)}</p>
+                <p>Valor B (${valB}): ${to8BitBinary(valB)}</p>
+            `;
+        }
+
         function setupMemory() {
             memory = {};
             memory[ADDR_A] = parseInt(valAInput.value, 10) || 0;
@@ -161,6 +185,7 @@
             memory[ADDR_RESULT] = 0;
             program.forEach(p => { memory[p.addr] = p; });
             renderMemory();
+            updateEncodingTable();
         }
         function renderMemory() {
             memoriaEl.innerHTML = '';
@@ -229,11 +254,16 @@
                     highlight(['memoria', 'ri', ...busPaths.data], 'bus-data');
                     highlight(['memoria', 'ri']);
                     updateRegister(riEl, `${instruction.inst} ${instruction.val || ''}`);
+                    ucOpcodeDisplay.textContent = '-'; // Clear previous opcode
                 });
                 
                 // --- ETAPA 2: DECODIFICACIÓN (DECODE) ---
                 addStep(`<b>2. Decodificación (Decode):</b> La Unidad de Control interpreta la instrucción.`, () => {
                      highlight(['uc', 'ri']);
+                });
+                addStep(`... La instrucción se decodifica a su código binario de 8 bits: <span class="mono">${instruction.opcode}</span>.`, () => {
+                    highlight(['uc', 'ri']);
+                    ucOpcodeDisplay.textContent = instruction.opcode;
                 });
 
                 // --- ETAPA 3: INCREMENTO DEL PC ---
@@ -296,12 +326,13 @@
         
         function ensureSimulationIsPrepared() {
             if (stepQueue.length === 0) {
-                logContent.innerHTML = ''; // Clear log for a new run
+                logContent.innerHTML = ''; 
                 prepareSimulation();
             }
         }
 
         async function executeNextStep() {
+            ensureSimulationIsPrepared();
             if (stepQueue.length > 0) {
                 nextStepBtn.disabled = true;
                 const step = stepQueue.shift();
@@ -315,6 +346,7 @@
         }
         
         async function autoRun() {
+            ensureSimulationIsPrepared();
             isAutoRunning = true;
             disableButtons(true);
             while(isAutoRunning && stepQueue.length > 0) {
@@ -335,16 +367,17 @@
 
         function resetState() {
              isAutoRunning = false;
-             stepQueue = []; // Clear the simulation plan
+             stepQueue = []; 
              unhighlightAll();
              
              updateRegister(pcEl, `0x${PROG_START.toString(16)}`);
              updateRegister(riEl, '-');
              updateRegister(acumuladorEl, '0');
              updateRegister(operando2El, '0');
+             ucOpcodeDisplay.textContent = '-';
              logContent.innerHTML = '<p class="text-gray-500" style="text-align: center;">Presiona "Siguiente Paso" o "Ejecución Automática"</p>';
              
-             setupMemory(); // Update memory with values in text boxes
+             setupMemory();
              
              autoRunBtn.disabled = false;
              nextStepBtn.disabled = false;
@@ -352,14 +385,8 @@
         }
         
         // --- Event Listeners ---
-        autoRunBtn.addEventListener('click', () => {
-            ensureSimulationIsPrepared();
-            autoRun();
-        });
-        nextStepBtn.addEventListener('click', () => {
-            ensureSimulationIsPrepared();
-            executeNextStep();
-        });
+        autoRunBtn.addEventListener('click', autoRun);
+        nextStepBtn.addEventListener('click', executeNextStep);
         resetBtn.addEventListener('click', resetState);
         
         // --- Initial Setup ---
