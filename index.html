@@ -141,7 +141,7 @@
         const pcEl = document.getElementById('pc'), riEl = document.getElementById('ri'), ucEl = document.getElementById('uc'), aluEl = document.getElementById('alu'), acumuladorEl = document.getElementById('acumulador'), operando2El = document.getElementById('operando2'), memoriaEl = document.getElementById('memoria-content');
 
         // --- Simulation State & Config ---
-        let memory = {}, pc = 0x1000, acumulador = 0, operando2 = 0;
+        let memory = {};
         const ADDR_A = '0x0001', ADDR_B = '0x0002', ADDR_RESULT = '0x0003', PROG_START = 0x1000, SIM_SPEED = 750;
         let stepQueue = [];
         let isAutoRunning = false;
@@ -172,7 +172,7 @@
         }
         function updateRegister(el, value) { el.querySelector('p').textContent = value; }
         function addLog(message, isStep = true) {
-             const stepPrefix = isStep ? `[Paso ${logContent.children.length + 1}] ` : '';
+            const stepPrefix = isStep ? `<b>[Paso ${logContent.children.length + 1}]</b> ` : '';
             logContent.innerHTML += `<p class="mb-2 p-2 bg-gray-800 rounded-md shadow">${stepPrefix}${message}</p>`;
             logContent.scrollTop = logContent.scrollHeight;
         }
@@ -206,11 +206,11 @@
             stepQueue = [];
             let tempPC = PROG_START;
             let tempAcumulador = 0;
-            let tempOperando2 = 0;
+            setupMemory(); // Ensure memory is updated with current input values
 
             for(const instruction of program) {
                  if (instruction.inst === 'HALT') {
-                    addStep("✅ **FIN:** Simulación completada.", () => {
+                    addStep("✅ **FIN:** El programa ha terminado.", () => {
                         highlight(['mem-' + ADDR_RESULT]);
                         disableButtons();
                     });
@@ -219,74 +219,71 @@
                 const currentPCStr = `0x${tempPC.toString(16)}`;
                 const operandAddr = instruction.val;
                 
-                // --- FETCH ---
-                addStep(`🔎 **FETCH [${instruction.inst}]**: PC (${currentPCStr}) -> Bus Direcciones.`, () => {
+                // --- ETAPA 1: LECTURA (FETCH) ---
+                addStep(`<b>1. Lectura (Fetch):</b> El PC (${currentPCStr}) envía la dirección a la Memoria.`, () => {
                     updateRegister(pcEl, currentPCStr);
                     highlight(['pc', 'memoria', ...busPaths.address], 'bus-address');
                     highlight(['pc', 'memoria']);
                 });
-                addStep(`📥 **FETCH**: Memoria -> Bus Datos -> RI.`, () => {
+                addStep(`... La instrucción ("${instruction.inst}") viaja desde la Memoria al Registro de Instrucción (RI).`, () => {
                     highlight(['memoria', 'ri', ...busPaths.data], 'bus-data');
                     highlight(['memoria', 'ri']);
                     updateRegister(riEl, `${instruction.inst} ${instruction.val || ''}`);
-                    updateRegister(pcEl, `0x${(tempPC + 1).toString(16)}`);
                 });
                 
-                // --- DECODE ---
-                addStep(`🤔 **DECODE**: UC decodifica: "${instruction.desc}".`, () => {
+                // --- ETAPA 2: DECODIFICACIÓN (DECODE) ---
+                addStep(`<b>2. Decodificación (Decode):</b> La Unidad de Control interpreta la instrucción.`, () => {
                      highlight(['uc', 'ri']);
                 });
 
-                // --- EXECUTE ---
+                // --- ETAPA 3: INCREMENTO DEL PC ---
+                addStep(`<b>3. Incremento del PC:</b> El Contador de Programa avanza a la siguiente dirección.`, () => {
+                    highlight(['pc']);
+                    updateRegister(pcEl, `0x${(tempPC + 1).toString(16)}`);
+                });
+
+                // --- ETAPA 4: EJECUCIÓN (EXECUTE) ---
+                addStep(`<b>4. Ejecución (Execute):</b> Se ejecuta la instrucción "${instruction.inst}".`, () => {
+                    highlight(['uc']);
+                });
+
                 switch (instruction.inst) {
                     case 'LOAD_A':
                         const valA = memory[operandAddr];
-                        addStep(`➡️ **EXEC [LOAD_A]**: Obteniendo valor de la dir. ${operandAddr}.`, () => {
+                        addStep(`... La UC busca el dato en la dirección ${operandAddr}.`, () => {
                             highlight(['uc', 'memoria', ...busPaths.address], 'bus-address');
-                            highlight(['uc', 'memoria']);
                         });
-                        addStep(`⬅️ **EXEC [LOAD_A]**: El valor (${valA}) viaja al Acumulador.`, () => {
+                        addStep(`... El valor (${valA}) viaja de la Memoria al Acumulador.`, () => {
                             highlight(['memoria', 'acumulador', ...busPaths.data], 'bus-data');
-                            highlight(['memoria', 'acumulador']);
                             tempAcumulador = valA;
                             updateRegister(acumuladorEl, tempAcumulador);
                         });
                         break;
                     case 'ADD':
                          const valB = memory[operandAddr];
-                         addStep(`➡️ **EXEC [ADD]**: Obteniendo valor de la dir. ${operandAddr}.`, () => {
+                         addStep(`... La UC busca el dato en la dirección ${operandAddr}.`, () => {
                             highlight(['uc', 'memoria', ...busPaths.address], 'bus-address');
-                            highlight(['uc', 'memoria']);
                         });
-                        addStep(`⬅️ **EXEC [ADD]**: El valor (${valB}) viaja al Operando 2.`, () => {
+                        addStep(`... El valor (${valB}) viaja de la Memoria al Operando 2.`, () => {
                             highlight(['memoria', 'operando2', ...busPaths.data], 'bus-data');
-                            highlight(['memoria', 'operando2']);
-                            tempOperando2 = valB;
-                            updateRegister(operando2El, tempOperando2);
+                            updateRegister(operando2El, valB);
                         });
-                        addStep(`➕ **EXEC [ADD]**: La ALU suma Acumulador (${tempAcumulador}) y Operando 2 (${tempOperando2}).`, () => {
+                        addStep(`... La ALU suma Acumulador (${tempAcumulador}) y Operando 2 (${valB}).`, () => {
                             highlight(['acumulador', 'operando2', 'alu', 'uc', ...busPaths.control], 'bus-control');
-                            highlight(['acumulador', 'operando2', 'alu', 'uc']);
                         });
-                        addStep(`🔄 **EXEC [ADD]**: El resultado (${Number(tempAcumulador) + Number(tempOperando2)}) se guarda en el Acumulador.`, () => {
-                            tempAcumulador = Number(tempAcumulador) + Number(tempOperando2);
+                        addStep(`... El resultado (${Number(tempAcumulador) + Number(valB)}) se guarda en el Acumulador.`, () => {
+                            tempAcumulador = Number(tempAcumulador) + Number(valB);
                             highlight(['alu', 'acumulador', ...busPaths.data], 'bus-data');
-                            highlight(['alu', 'acumulador']);
                             updateRegister(acumuladorEl, tempAcumulador);
                         });
                         break;
                     case 'STORE':
-                        addStep(`➡️ **EXEC [STORE]**: Enviando dirección de destino (${operandAddr}).`, () => {
-                             highlight(['uc', 'memoria', ...busPaths.address], 'bus-address');
-                            highlight(['uc', 'memoria']);
-                        });
-                        addStep(`⬅️ **EXEC [STORE]**: Enviando resultado (${tempAcumulador}) desde el Acumulador.`, () => {
+                        addStep(`... El Acumulador (${tempAcumulador}) pone el resultado en el Bus de Datos.`, () => {
                              highlight(['acumulador', 'memoria', ...busPaths.data], 'bus-data');
-                            highlight(['acumulador', 'memoria']);
                         });
-                        addStep(`💾 **EXEC [STORE]**: La UC envía señal de 'escribir'.`, () => {
-                             highlight(['uc', 'memoria', ...busPaths.control], 'bus-control');
-                            highlight(['uc', 'memoria']);
+                        addStep(`... La UC envía la dirección de destino (${operandAddr}) y la señal de 'escribir'.`, () => {
+                             highlight(['uc', 'memoria', ...busPaths.address, ...busPaths.control], 'bus-control');
+                             highlight(['uc', 'memoria', ...busPaths.address], 'bus-address');
                             memory[ADDR_RESULT] = tempAcumulador;
                             renderMemory();
                             document.getElementById('mem-' + ADDR_RESULT).classList.add('highlight-component');
@@ -294,6 +291,13 @@
                         break;
                 }
                 tempPC++;
+            }
+        }
+        
+        function ensureSimulationIsPrepared() {
+            if (stepQueue.length === 0) {
+                logContent.innerHTML = ''; // Clear log for a new run
+                prepareSimulation();
             }
         }
 
@@ -331,18 +335,16 @@
 
         function resetState() {
              isAutoRunning = false;
+             stepQueue = []; // Clear the simulation plan
              unhighlightAll();
-             pc = PROG_START;
-             acumulador = 0;
-             operando2 = 0;
-             updateRegister(pcEl, `0x${pc.toString(16)}`);
+             
+             updateRegister(pcEl, `0x${PROG_START.toString(16)}`);
              updateRegister(riEl, '-');
              updateRegister(acumuladorEl, '0');
              updateRegister(operando2El, '0');
              logContent.innerHTML = '<p class="text-gray-500" style="text-align: center;">Presiona "Siguiente Paso" o "Ejecución Automática"</p>';
              
-             setupMemory();
-             prepareSimulation();
+             setupMemory(); // Update memory with values in text boxes
              
              autoRunBtn.disabled = false;
              nextStepBtn.disabled = false;
@@ -350,8 +352,14 @@
         }
         
         // --- Event Listeners ---
-        autoRunBtn.addEventListener('click', autoRun);
-        nextStepBtn.addEventListener('click', executeNextStep);
+        autoRunBtn.addEventListener('click', () => {
+            ensureSimulationIsPrepared();
+            autoRun();
+        });
+        nextStepBtn.addEventListener('click', () => {
+            ensureSimulationIsPrepared();
+            executeNextStep();
+        });
         resetBtn.addEventListener('click', resetState);
         
         // --- Initial Setup ---
