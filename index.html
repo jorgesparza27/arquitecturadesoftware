@@ -72,26 +72,28 @@
             <button id="resetSim" class="w-full sm:w-auto bg-red-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-red-400 transition-colors">Reiniciar</button>
         </div>
 
-        <!-- Diagrama y Log -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <!-- Diagrama del Microprocesador -->
-            <div class="lg:col-span-2 relative border-4 border-gray-700 rounded-xl p-4 md:p-8 min-h-[600px] bg-black bg-opacity-20" id="diagram-container">
+        <!-- Diagrama y Log (Stacked Layout) -->
+        <div class="flex flex-col gap-8">
+            <!-- Diagrama del Microprocesador (Ahora ocupa todo el ancho) -->
+            <div class="relative border-4 border-gray-700 rounded-xl p-4 md:p-8 min-h-[600px] bg-black bg-opacity-20" id="diagram-container">
                 <h2 class="absolute top-2 left-4 text-xl font-bold text-gray-400">Microprocesador de 8 bits</h2>
 
-                <!-- Buses (se dibujarán con JS, estas son las líneas visuales) -->
-                <!-- Conexiones principales -->
+                <!-- Buses (Unchanged) -->
                 <div id="bus-pc-addr" class="bus" style="width: 2px; height: 130px; top: 100px; left: 140px;"></div>
                 <div id="bus-uc-addr" class="bus" style="width: 2px; height: 130px; top: 220px; left: 140px;"></div>
                 <div id="bus-ri-uc" class="bus" style="width: 120px; height: 2px; top: 160px; left: 200px;"></div>
                 <div id="bus-uc-alu" class="bus" style="width: 120px; height: 2px; top: 320px; left: 200px;"></div>
-                <div id="bus-acum-alu" class="bus" style="width: 2px; height: 60px; top: 352px; left: 450px;"></div>
-                <div id="bus-op2-alu" class="bus" style="width: 2px; height: 60px; top: 352px; left: 550px;"></div>
+                
+                <!-- Conexiones ALU/Registros ajustadas para la parte inferior -->
+                <div id="bus-acum-alu" class="bus" style="width: 2px; height: 60px; bottom: 130px; left: 450px;"></div>
+                <div id="bus-op2-alu" class="bus" style="width: 2px; height: 60px; bottom: 130px; left: 550px;"></div>
                 <div id="bus-alu-acum" class="bus" style="width: 100px; height: 2px; top: 290px; left: 350px;"></div>
                 <div id="bus-datos-main" class="bus" style="width: 2px; height: 450px; top: 100px; right: 150px;"></div>
                  
                 <!-- Componentes -->
-                <div class="grid grid-cols-3 gap-x-8 gap-y-12 relative z-10">
-                    <!-- Columna 1: Control -->
+                <!-- El contenedor interno tiene un max-width y está centrado -->
+                <div class="grid grid-cols-3 gap-x-8 gap-y-12 relative z-10 mx-auto" style="max-width: 600px;">
+                    <!-- Columna 1: Control (Parte Superior) -->
                     <div id="pc" class="component col-span-1">
                         <h3 class="font-bold text-center">Contador de Programa (PC)</h3>
                         <p class="mono text-center text-lg mt-1">0x1000</p>
@@ -105,25 +107,19 @@
                          <p class="mono text-center text-sm mt-1">Decodificando...</p>
                     </div>
 
-                    <!-- Columna 2: ALU y Registros -->
-                    <div id="acumulador" class="component col-span-1">
+                    <!-- Columna 2: ALU (Parte Media) -->
+                    <div id="alu" class="component col-span-3 flex items-center justify-center mt-16 mb-16">
+                        <h3 class="font-bold text-center text-2xl">ALU</h3>
+                    </div>
+
+                    <!-- Columna 3: Registros (Parte Inferior) -->
+                    <div id="acumulador" class="component col-span-1" style="grid-column: 1 / span 1;">
                         <h3 class="font-bold text-center">Acumulador</h3>
                         <p class="mono text-center text-lg mt-1">0</p>
                     </div>
-                     <div id="alu" class="component col-span-2 flex items-center justify-center">
-                        <h3 class="font-bold text-center text-2xl">ALU</h3>
-                    </div>
-                     <div id="operando2" class="component col-span-1">
+                     <div id="operando2" class="component col-span-1" style="grid-column: 3 / span 1;">
                         <h3 class="font-bold text-center">Operando 2</h3>
                         <p class="mono text-center text-lg mt-1">0</p>
-                    </div>
-
-                    <!-- Columna 3: Memoria (externa pero visualizada aquí) -->
-                     <div class="absolute top-0 right-[-200px] w-48 space-y-2">
-                        <h3 class="text-xl font-bold text-center mb-2">Memoria</h3>
-                        <div id="memoria" class="component w-full h-96 overflow-y-auto p-2 bg-gray-900">
-                           <!-- El contenido se genera con JS -->
-                        </div>
                     </div>
                 </div>
 
@@ -140,12 +136,23 @@
                 </div>
             </div>
 
-            <!-- Log de la Simulación -->
-            <div class="lg:col-span-1">
-                <div id="log" class="component h-full min-h-[600px] bg-gray-900 p-4 overflow-y-auto">
-                    <h2 class="text-xl font-bold text-white mb-4 border-b border-gray-700 pb-2">Registro de Simulación</h2>
-                    <div id="log-content">
-                        <p class="text-gray-500">Esperando inicio de la simulación...</p>
+            <!-- Contenedor para Memoria y Log (Full Width, ahora debajo) -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Memoria (Columna 1) -->
+                 <div class="md:col-span-1">
+                    <h3 class="text-xl font-bold text-white mb-2">Memoria</h3>
+                    <div id="memoria" class="component w-full h-96 overflow-y-auto p-2 bg-gray-900">
+                       <!-- El contenido se genera con JS -->
+                    </div>
+                </div>
+
+                <!-- Log de la Simulación (Columnas 2 y 3) -->
+                <div class="md:col-span-2">
+                    <div id="log" class="component w-full min-h-[300px] bg-gray-900 p-4 overflow-y-auto">
+                        <h2 class="text-xl font-bold text-white mb-4 border-b border-gray-700 pb-2">Registro de Simulación</h2>
+                        <div id="log-content">
+                            <p class="text-gray-500">Esperando inicio de la simulación...</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -405,4 +412,3 @@
     </script>
 </body>
 </html>
-
