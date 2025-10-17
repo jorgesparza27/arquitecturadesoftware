@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simulador de CPU - Arquitectura Clásica</title>
+    <title>Simulador de CPU - Arquitectura 16 bits</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap');
@@ -54,7 +54,7 @@
     <div class="max-w-7xl mx-auto">
         <header class="text-center mb-8">
             <h1 class="text-3xl md:text-4xl font-bold text-white">Simulador de CPU</h1>
-            <p class="text-lg text-gray-400">Visualización de la suma A + B con arquitectura de microprocesador</p>
+            <p class="text-lg text-gray-400">Visualización de la suma A + B con arquitectura de microprocesador de 16 bits</p>
         </header>
 
         <!-- Controles -->
@@ -79,7 +79,7 @@
                 
                 <!-- Contenedor del Microprocesador -->
                 <div class="absolute inset-x-32 top-8 bottom-48 border-2 border-dashed border-gray-600 rounded-lg">
-                     <h2 class="absolute top-2 left-4 text-xl font-bold text-gray-500">Microprocesador de 8 bits</h2>
+                     <h2 class="absolute top-2 left-4 text-xl font-bold text-gray-500">Microprocesador de 16 bits</h2>
                 </div>
 
                 <!-- Buses Principales (Ejes Centrales) -->
@@ -92,7 +92,7 @@
                 <div id="uc" class="component flex flex-col justify-center" style="top: 150px; left: 35%; width: 140px; height: 100px;">
                     <h3 class="font-bold">Unidad Control</h3>
                     <h4 class="font-semibold text-sm text-gray-400">(Decodificador)</h4>
-                    <p id="uc-opcode-display" class="mono text-yellow-300 mt-1">-</p>
+                    <p id="uc-opcode-display" class="mono text-yellow-300 mt-1 text-xs">-</p>
                 </div>
                 <div id="acumulador" class="component" style="top: 320px; left: 30%;"><h3 class="font-bold">Acumulador</h3><p class="mono mt-1">0</p></div>
                 <div id="operando2" class="component" style="top: 320px; left: 55%;"><h3 class="font-bold">Operando 2</h3><p class="mono mt-1">0</p></div>
@@ -100,10 +100,11 @@
                 <div id="memoria" class="component" style="bottom: 10px; left: 10%; width: 200px; height: 150px;"><h3 class="font-bold">Memoria</h3><div id="memoria-content" class="text-left overflow-y-auto h-28 mt-1 bg-gray-800 p-1 rounded"></div></div>
                 <div class="component" style="bottom: 10px; right: 10%;"><h3 class="font-bold">Entradas/Salidas</h3></div>
                 
-                <!-- Tabla de Codificación de Datos -->
-                <div id="data-encoding-table" class="component" style="top: 20px; right: 2%;">
-                    <h3 class="font-bold">Codificación de Datos</h3>
-                    <div id="encoding-content" class="text-left mono mt-1 text-sm"></div>
+                <!-- Tabla de Codificación -->
+                <div id="encoding-table" class="component" style="top: 20px; right: 2%; width: 220px;">
+                    <h3 class="font-bold">Codificación de 16 bits</h3>
+                    <div id="encoding-content-data" class="text-left mono mt-1 text-xs"></div>
+                    <div id="encoding-content-inst" class="text-left mono mt-1 text-xs border-t border-gray-600 pt-1"></div>
                 </div>
 
                 <!-- BUSES DE CONEXIÓN Y ETIQUETAS -->
@@ -148,7 +149,8 @@
         const valAInput = document.getElementById('valA');
         const valBInput = document.getElementById('valB');
         const logContent = document.getElementById('log-content');
-        const encodingContent = document.getElementById('encoding-content');
+        const encodingContentData = document.getElementById('encoding-content-data');
+        const encodingContentInst = document.getElementById('encoding-content-inst');
         const pcEl = document.getElementById('pc'), riEl = document.getElementById('ri'), ucEl = document.getElementById('uc'), aluEl = document.getElementById('alu'), acumuladorEl = document.getElementById('acumulador'), operando2El = document.getElementById('operando2'), memoriaEl = document.getElementById('memoria-content');
         const ucOpcodeDisplay = document.getElementById('uc-opcode-display');
 
@@ -159,23 +161,32 @@
         let isAutoRunning = false;
         
         const program = [
-            { addr: '0x1000', inst: 'LOAD_A', opcode: '00010001', val: ADDR_A, desc: `Cargar Acumulador desde dir. ${ADDR_A}`},
-            { addr: '0x1001', inst: 'ADD', opcode: '00100010', val: ADDR_B, desc: `Sumar valor de dir. ${ADDR_B}`},
-            { addr: '0x1002', inst: 'STORE', opcode: '00110011', val: ADDR_RESULT, desc: `Guardar resultado en dir. ${ADDR_RESULT}`},
-            { addr: '0x1003', inst: 'HALT', opcode: '11110000', val: null, desc: 'Fin del programa' }
+            { addr: '0x1000', inst: 'LOAD_A', opcode: '0001000100010001', hexcode: '0x1111', val: ADDR_A, desc: `Cargar Acumulador desde dir. ${ADDR_A}`},
+            { addr: '0x1001', inst: 'ADD', opcode: '0010001000100010', hexcode: '0x2222', val: ADDR_B, desc: `Sumar valor de dir. ${ADDR_B}`},
+            { addr: '0x1002', inst: 'STORE', opcode: '0011001100110011', hexcode: '0x3333', val: ADDR_RESULT, desc: `Guardar resultado en dir. ${ADDR_RESULT}`},
+            { addr: '0x1003', inst: 'HALT', opcode: '1111000011110000', hexcode: '0xF0F0', val: null, desc: 'Fin del programa' }
         ];
 
         // --- Functions ---
-        function to8BitBinary(num) {
-            return num.toString(2).padStart(8, '0');
+        function to16BitBinary(num) {
+            return num.toString(2).padStart(16, '0');
         }
-        function updateEncodingTable() {
+        function updateDataEncodingTable() {
             const valA = parseInt(valAInput.value, 10) || 0;
             const valB = parseInt(valBInput.value, 10) || 0;
-            encodingContent.innerHTML = `
-                <p>Valor A (${valA}): ${to8BitBinary(valA)}</p>
-                <p>Valor B (${valB}): ${to8BitBinary(valB)}</p>
+            encodingContentData.innerHTML = `
+                <b>Datos:</b>
+                <p>Valor A (${valA}): ${to16BitBinary(valA)}</p>
+                <p>Valor B (${valB}): ${to16BitBinary(valB)}</p>
             `;
+        }
+        function updateInstructionEncodingTable() {
+            encodingContentInst.innerHTML = '<b>Instrucciones:</b>';
+            program.forEach(p => {
+                if (p.inst) {
+                    encodingContentInst.innerHTML += `<p>${p.inst}: ${p.hexcode}</p>`;
+                }
+            });
         }
 
         function setupMemory() {
@@ -185,7 +196,8 @@
             memory[ADDR_RESULT] = 0;
             program.forEach(p => { memory[p.addr] = p; });
             renderMemory();
-            updateEncodingTable();
+            updateDataEncodingTable();
+            updateInstructionEncodingTable();
         }
         function renderMemory() {
             memoriaEl.innerHTML = '';
@@ -261,7 +273,7 @@
                 addStep(`<b>2. Decodificación (Decode):</b> La Unidad de Control interpreta la instrucción.`, () => {
                      highlight(['uc', 'ri']);
                 });
-                addStep(`... La instrucción se decodifica a su código binario de 8 bits: <span class="mono">${instruction.opcode}</span>.`, () => {
+                addStep(`... La instrucción se decodifica a su código binario de 16 bits: <span class="mono">${instruction.opcode}</span>.`, () => {
                     highlight(['uc', 'ri']);
                     ucOpcodeDisplay.textContent = instruction.opcode;
                 });
@@ -394,4 +406,6 @@
     </script>
 </body>
 </html>
+
+
 
