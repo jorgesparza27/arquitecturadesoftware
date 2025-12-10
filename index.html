@@ -1,299 +1,654 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
-<style>
- body { font-family: Arial, sans-serif; background:#f5f5f5; padding:20px; }
- .container { background:white; padding:25px; border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,0.1); max-width:900px; margin:auto; }
- h1 { text-align:center; color:#1a237e; }
- fieldset { border:2px solid #1a237e; padding:15px; margin-bottom:20px; border-radius:10px; }
- legend { font-weight:bold; color:#1a237e; }
- label { font-weight:bold; }
- input, select, textarea { width:100%; padding:8px; margin-top:5px; border:1px solid #aaa; border-radius:6px; }
- .logo { text-align:center; margin-bottom:20px; font-size:28px; font-weight:bold; color:#0d47a1; letter-spacing:2px; }
- .signature-box { border:1px solid #999; border-radius:8px; background:white; }
- button { padding:10px 20px; border:none; border-radius:8px; cursor:pointer; font-weight:bold; }
- .btn-primary { background:#1a237e; color:white; }
- .btn-secondary { background:#3949ab; color:white; }
-</style>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Registro de Mantenimiento - Correctivo / Preventivo</title>
-  <style>
-    :root{font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial;--accent:#0b74de}
-    body{margin:0;padding:24px;background:#f4f6f8;color:#111}
-    .container{max-width:980px;margin:0 auto;background:#fff;padding:20px;border-radius:10px;box-shadow:0 6px 20px rgba(12,20,30,0.06)}
-    h1{font-size:20px;margin:0 0 8px}
-    .row{display:flex;gap:12px;flex-wrap:wrap}
-    .col{flex:1;min-width:200px}
-    label{display:block;font-size:13px;margin-bottom:6px}
-    input[type=text],input[type=date],select,textarea{width:100%;padding:8px;border:1px solid #d6dbe0;border-radius:6px;font-size:14px}
-    textarea{min-height:80px;resize:vertical}
-    .radioGroup{display:flex;gap:12px;align-items:center}
-    .card{background:#fbfdff;padding:12px;border-radius:8px;border:1px solid #eef3fb}
-    .checklist{display:flex;flex-direction:column;gap:6px}
-    .small{font-size:13px;color:#444}
-    footer{display:flex;gap:12px;justify-content:space-between;align-items:center;margin-top:16px}
-    button{background:var(--accent);color:#fff;border:none;padding:10px 14px;border-radius:8px;cursor:pointer}
-    button.secondary{background:#eee;color:#222}
-    .sign-wrap{display:flex;gap:16px;align-items:flex-start}
-    .sign-box{flex:1}
-    canvas.signature{width:100%;height:140px;border:1px dashed #bfcbd9;border-radius:6px;background:#fff}
-    .actions{display:flex;gap:8px;flex-wrap:wrap}
-    .meta{font-size:13px;color:#666;margin-bottom:8px}
-    .print-ready{display:none}
-    @media print{body{background:#fff} .container{box-shadow:none;border:none} .no-print{display:none} .print-ready{display:block}}
-  </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de Mantenimiento - MEGATECNOLOGY</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- jsPDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        
+        /* Signature Canvas Style */
+        canvas.signature-pad {
+            background: #fff;
+            width: 100%;
+            height: 150px;
+            border: 2px dashed #cbd5e1;
+            border-radius: 0.5rem;
+            cursor: crosshair;
+            touch-action: none; /* Prevents scrolling while signing on mobile */
+        }
+
+        /* Print Styles */
+        @media print {
+            body { background-color: white; -webkit-print-color-adjust: exact; }
+            .no-print { display: none !important; }
+            .container { max-width: 100% !important; box-shadow: none !important; padding: 0 !important; margin: 0 !important; }
+            .card { border: 1px solid #e5e7eb; box-shadow: none !important; break-inside: avoid; }
+            textarea { resize: none; border: none; overflow: hidden; }
+            input, select { border: none; background: transparent; }
+            /* Force specific colors for print */
+            h1, h2, h3, legend { color: #1e3a8a !important; } /* blue-900 */
+        }
+    </style>
 </head>
-<body>
-<div class="logo"><img src="./megatecnology.png" alt="Logo" style="max-width:180px; margin:auto; display:block;"> <br>MEGATECNOLOGY</div>
-<div class="container">
-  <div class="container">
-    <h1>Registro de Mantenimiento</h1>
-    <p class="meta">Formulario para registrar servicios correctivos o preventivos. Imprime o exporta desde el navegador.</p>
+<body class="text-slate-800">
 
-    <form id="maintForm">
-      <div class="row">
-        <div class="col card">
-          <label>Tipo de mantenimiento</label>
-          <div class="radioGroup">
-            <label><input type="radio" name="tipo" value="Correctivo" checked> Correctivo</label>
-            <label><input type="radio" name="tipo" value="Preventivo"> Preventivo</label>
-          </div>
-
-          <label>Fecha</label>
-          <input type="date" name="fecha" required>
-
-          <label>Técnico</label>
-          <input type="text" name="tecnico" placeholder="Nombre del técnico" required>
-
-          <label>Cliente</label>
-          <input type="text" name="cliente" placeholder="Nombre del cliente / empresa" required>
-
-          <label>Contacto</label>
-          <input type="text" name="contacto" placeholder="Teléfono / correo">
-        </div>
-
-        <div class="col card">
-          <label>Datos del equipo</label>
-          <div class="row">
-            <div class="col">
-              <label>Tipo</label>
-              <select name="tipoEquipo">
-                <option>PC de escritorio</option>
-                <option>Portátil</option>
-                <option>Servidor</option>
-                <option>Impresora</option>
-                <option>Otro</option>
-              </select>
+    <div class="container mx-auto max-w-5xl p-4 md:p-8 bg-white my-4 md:my-8 rounded-xl shadow-lg border border-slate-200" id="main-container">
+        
+        <!-- Header -->
+        <div class="text-center mb-8 relative group">
+            <div class="flex justify-center items-center flex-col cursor-pointer" onclick="document.getElementById('logoInput').click()">
+                <img id="logoPreview" src="https://placehold.co/200x60/1e3a8a/ffffff?text=LOGO+HERE" alt="Logo" class="h-16 object-contain mb-2">
+                <input type="file" id="logoInput" accept="image/*" class="hidden" onchange="handleLogoUpload(this)">
+                <h1 class="text-3xl font-bold text-blue-900 tracking-wider">MEGATECNOLOGY</h1>
+                <p class="text-xs text-slate-400 no-print group-hover:text-blue-500 transition">(Click logo to change)</p>
             </div>
-            <div class="col">
-              <label>Marca</label>
-              <input type="text" name="marca">
+            <p class="text-slate-500 text-sm mt-2">Informe Técnico de Servicio y Mantenimiento</p>
+        </div>
+
+        <form id="maintForm" class="space-y-6">
+            
+            <!-- Section 1: Basic Info -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Col 1: Service Details -->
+                <div class="card bg-slate-50 p-5 rounded-lg border border-slate-200">
+                    <h3 class="font-bold text-blue-900 mb-4 border-b pb-2"><i class="fas fa-info-circle mr-2"></i>Detalles del Servicio</h3>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-semibold mb-2">Tipo de Mantenimiento</label>
+                        <div class="flex space-x-4">
+                            <label class="flex items-center space-x-2 cursor-pointer bg-white px-3 py-2 rounded border border-slate-300 hover:border-blue-500 transition w-full justify-center">
+                                <input type="radio" name="tipo" value="Correctivo" checked class="text-blue-600 focus:ring-blue-500">
+                                <span>Correctivo</span>
+                            </label>
+                            <label class="flex items-center space-x-2 cursor-pointer bg-white px-3 py-2 rounded border border-slate-300 hover:border-blue-500 transition w-full justify-center">
+                                <input type="radio" name="tipo" value="Preventivo" class="text-blue-600 focus:ring-blue-500">
+                                <span>Preventivo</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs uppercase font-bold text-slate-500 mb-1">Fecha</label>
+                            <input type="date" name="fecha" required class="w-full p-2 rounded border border-slate-300 focus:outline-none focus:border-blue-500 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs uppercase font-bold text-slate-500 mb-1">Técnico</label>
+                            <input type="text" name="tecnico" placeholder="Nombre" required class="w-full p-2 rounded border border-slate-300 focus:outline-none focus:border-blue-500 text-sm">
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <label class="block text-xs uppercase font-bold text-slate-500 mb-1">Cliente / Empresa</label>
+                        <input type="text" name="cliente" required class="w-full p-2 rounded border border-slate-300 focus:outline-none focus:border-blue-500 text-sm font-semibold">
+                    </div>
+
+                    <div class="mt-4">
+                        <label class="block text-xs uppercase font-bold text-slate-500 mb-1">Contacto</label>
+                        <input type="text" name="contacto" placeholder="Teléfono / Email" class="w-full p-2 rounded border border-slate-300 focus:outline-none focus:border-blue-500 text-sm">
+                    </div>
+                </div>
+
+                <!-- Col 2: Equipment Data -->
+                <div class="card bg-slate-50 p-5 rounded-lg border border-slate-200">
+                    <h3 class="font-bold text-blue-900 mb-4 border-b pb-2"><i class="fas fa-laptop mr-2"></i>Datos del Equipo</h3>
+                    
+                    <div class="grid grid-cols-3 gap-3 mb-3">
+                        <div class="col-span-3 md:col-span-1">
+                            <label class="block text-xs text-slate-500 mb-1">Tipo</label>
+                            <select name="tipoEquipo" id="tipoEquipoSelect" class="w-full p-2 rounded border border-slate-300 text-sm bg-white">
+                                <option value="PC de escritorio">PC Escritorio</option>
+                                <option value="Portátil">Portátil / Laptop</option>
+                                <option value="Servidor">Servidor</option>
+                                <option value="Impresora">Impresora</option>
+                                <option value="Otro">Otro</option>
+                            </select>
+                        </div>
+                        <div class="col-span-3 md:col-span-1">
+                            <label class="block text-xs text-slate-500 mb-1">Marca</label>
+                            <input type="text" name="marca" class="w-full p-2 rounded border border-slate-300 text-sm">
+                        </div>
+                        <div class="col-span-3 md:col-span-1">
+                            <label class="block text-xs text-slate-500 mb-1">Modelo</label>
+                            <input type="text" name="modelo" class="w-full p-2 rounded border border-slate-300 text-sm">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="block text-xs text-slate-500 mb-1">Número de Serie / Activo</label>
+                        <input type="text" name="serie" class="w-full p-2 rounded border border-slate-300 text-sm bg-white font-mono">
+                    </div>
+
+                    <!-- Dynamic Fields Container -->
+                    <div id="dynamicFields" class="bg-white p-3 rounded border border-slate-200 mb-3 text-sm">
+                        <!-- Content injected via JS -->
+                    </div>
+
+                    <div>
+                        <label class="block text-xs text-slate-500 mb-1">Accesorios Recibidos</label>
+                        <input type="text" name="accesorios" placeholder="Cargador, maletín, cables..." class="w-full p-2 rounded border border-slate-300 text-sm">
+                    </div>
+                </div>
             </div>
-            <div class="col">
-              <label>Modelo</label>
-              <input type="text" name="modelo">
+
+            <!-- Section 2: Diagnosis & Work -->
+            <div class="card bg-slate-50 p-5 rounded-lg border border-slate-200">
+                <h3 class="font-bold text-blue-900 mb-4 border-b pb-2"><i class="fas fa-tools mr-2"></i>Diagnóstico y Reparación</h3>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-bold text-red-600 mb-1">Problema Reportado / Falla</label>
+                    <textarea name="problema" rows="2" class="w-full p-3 rounded border border-red-200 bg-red-50 text-sm focus:bg-white focus:border-red-400 focus:outline-none transition"></textarea>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-1">Acciones Realizadas</label>
+                        <textarea name="acciones" rows="4" placeholder="Describa el trabajo técnico..." required class="w-full p-3 rounded border border-slate-300 text-sm focus:border-blue-500 focus:outline-none"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-1">Repuestos / Materiales</label>
+                        <textarea name="repuestos" rows="4" placeholder="Lista de partes utilizadas..." class="w-full p-3 rounded border border-slate-300 text-sm focus:border-blue-500 focus:outline-none"></textarea>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <label class="block text-sm font-bold text-slate-700 mb-1">Observaciones / Recomendaciones</label>
+                    <textarea name="observaciones" rows="2" class="w-full p-3 rounded border border-slate-300 text-sm focus:border-blue-500 focus:outline-none"></textarea>
+                </div>
             </div>
-          </div>
 
-          <label>Número de serie / Inventario</label>
-          <input type="text" name="serie">
+            <!-- Section 3: Checklist -->
+            <div class="card bg-slate-50 p-5 rounded-lg border border-slate-200">
+                <h3 class="font-bold text-blue-900 mb-4 border-b pb-2"><i class="fas fa-clipboard-check mr-2"></i>Checklist de Entrega</h3>
+                
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3" id="checklist-container">
+                    <label class="flex items-center space-x-2 text-sm">
+                        <input type="checkbox" name="chk" value="Encendido" data-label="Encendido" class="rounded text-blue-600 focus:ring-blue-500">
+                        <span>Encendido</span>
+                    </label>
+                    <label class="flex items-center space-x-2 text-sm">
+                        <input type="checkbox" name="chk" value="Limpieza Externa" data-label="Limpieza Externa" class="rounded text-blue-600 focus:ring-blue-500">
+                        <span>Limpieza Externa</span>
+                    </label>
+                    <label class="flex items-center space-x-2 text-sm">
+                        <input type="checkbox" name="chk" value="Drivers" data-label="Drivers" class="rounded text-blue-600 focus:ring-blue-500">
+                        <span>Drivers</span>
+                    </label>
+                    <label class="flex items-center space-x-2 text-sm">
+                        <input type="checkbox" name="chk" value="Red/WiFi" data-label="Red/WiFi" class="rounded text-blue-600 focus:ring-blue-500">
+                        <span>Red/WiFi</span>
+                    </label>
+                    <label class="flex items-center space-x-2 text-sm">
+                        <input type="checkbox" name="chk" value="Audio/Video" data-label="Audio/Video" class="rounded text-blue-600 focus:ring-blue-500">
+                        <span>Audio/Video</span>
+                    </label>
+                    <label class="flex items-center space-x-2 text-sm">
+                        <input type="checkbox" name="chk" value="Puertos USB" data-label="Puertos USB" class="rounded text-blue-600 focus:ring-blue-500">
+                        <span>Puertos USB</span>
+                    </label>
+                </div>
 
-          <label>Problema reportado</label>
-          <textarea name="problema"></textarea>
-
-        </div>
-      </div>
-
-      <div style="height:12px"></div>
-
-      <div class="card">
-        <label>Acciones realizadas</label>
-        <textarea name="acciones" placeholder="Describir pasos realizados, pruebas y resultados" required></textarea>
-
-        <label>Repuestos / materiales usados</label>
-        <input type="text" name="repuestos" placeholder="Ej: fuente 500W, pasta térmica, SSD 256GB">
-
-        <label>Observaciones</label>
-        <textarea name="observaciones"></textarea>
-      </div>
-
-      <div style="height:12px"></div>
-
-      <div class="card">
-        <label>Checklist</label>
-        <div class="checklist" id="checklist">
-          <label><input type="checkbox" name="chk" value="Encendido y prueba"> Encendido y prueba</label>
-          <label><input type="checkbox" name="chk" value="Limpieza interna"> Limpieza interna</label>
-          <label><input type="checkbox" name="chk" value="Actualización de drivers/OS"> Actualización de drivers/OS</label>
-          <label><input type="checkbox" name="chk" value="Backup de datos"> Backup de datos</label>
-          <label><input type="checkbox" name="chk" value="Prueba de red y conectividad"> Prueba de red y conectividad</label>
-        </div>
-        <div style="margin-top:8px" class="row">
-          <input type="text" id="newChkText" placeholder="Agregar elemento" class="col">
-          <button type="button" class="secondary" id="addChk">Agregar</button>
-        </div>
-      </div>
-
-      <div style="height:12px"></div>
-
-      <div class="card">
-        <label>Firmas</label>
-        <div class="sign-wrap">
-          <div class="sign-box">
-            <div class="small">Firma del técnico</div>
-            <canvas id="sigTech" class="signature"></canvas>
-            <div class="actions no-print" style="margin-top:8px">
-              <button type="button" id="clearTech" class="secondary">Borrar</button>
+                <div class="flex mt-4 space-x-2 no-print">
+                    <input type="text" id="newChkText" placeholder="Nuevo item..." class="flex-1 p-2 border rounded text-sm">
+                    <button type="button" id="addChkBtn" class="bg-blue-100 text-blue-800 px-4 py-2 rounded hover:bg-blue-200 text-sm font-semibold transition">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
             </div>
-            <input type="text" name="firmaTecnicoNombre" placeholder="Nombre (firma)" style="margin-top:8px">
-          </div>
 
-          <div class="sign-box">
-            <div class="small">Firma del cliente</div>
-            <canvas id="sigClient" class="signature"></canvas>
-            <div class="actions no-print" style="margin-top:8px">
-              <button type="button" id="clearClient" class="secondary">Borrar</button>
+            <!-- Section 4: Signatures -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8 break-inside-avoid">
+                <div>
+                    <div class="flex justify-between items-end mb-2">
+                        <label class="font-bold text-slate-700">Firma del Técnico</label>
+                        <button type="button" onclick="sigTech.clear()" class="text-xs text-red-500 hover:text-red-700 underline no-print">Borrar</button>
+                    </div>
+                    <canvas id="sigTech" class="signature-pad"></canvas>
+                    <input type="text" name="firmaTecnicoNombre" placeholder="Nombre legible" class="mt-2 w-full border-b border-slate-300 focus:border-blue-500 outline-none py-1 text-center bg-transparent">
+                </div>
+                <div>
+                    <div class="flex justify-between items-end mb-2">
+                        <label class="font-bold text-slate-700">Firma del Cliente</label>
+                        <button type="button" onclick="sigClient.clear()" class="text-xs text-red-500 hover:text-red-700 underline no-print">Borrar</button>
+                    </div>
+                    <canvas id="sigClient" class="signature-pad"></canvas>
+                    <input type="text" name="firmaClienteNombre" placeholder="Nombre legible" class="mt-2 w-full border-b border-slate-300 focus:border-blue-500 outline-none py-1 text-center bg-transparent">
+                </div>
             </div>
-            <input type="text" name="firmaClienteNombre" placeholder="Nombre (firma)" style="margin-top:8px">
-          </div>
+
+            <!-- Footer Controls -->
+            <footer class="fixed bottom-0 left-0 w-full bg-white border-t border-slate-200 p-4 shadow-lg flex flex-col md:flex-row gap-3 justify-center items-center z-50 no-print">
+                <button type="button" onclick="window.print()" class="bg-slate-800 text-white px-6 py-3 rounded-lg hover:bg-slate-900 transition font-medium shadow-md flex items-center">
+                    <i class="fas fa-print mr-2"></i> Imprimir / PDF
+                </button>
+                <button type="button" onclick="generateDigitalPDF()" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition font-medium shadow-md flex items-center">
+                    <i class="fas fa-file-pdf mr-2"></i> Descargar PDF Digital
+                </button>
+                <button type="submit" class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition font-medium shadow-md flex items-center">
+                    <i class="fas fa-save mr-2"></i> Guardar Local
+                </button>
+                <button type="button" id="btnHistory" class="bg-slate-100 text-slate-600 px-4 py-3 rounded-lg hover:bg-slate-200 transition font-medium">
+                    <i class="fas fa-history"></i>
+                </button>
+            </footer>
+
+            <div class="h-20 no-print"></div> <!-- Spacer for fixed footer -->
+        </form>
+    </div>
+
+    <!-- History Modal -->
+    <div id="historyModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex justify-end">
+        <div class="bg-white w-full max-w-md h-full shadow-2xl overflow-y-auto p-6 transition-transform transform translate-x-full" id="historyContent">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-blue-900">Historial Local</h2>
+                <button id="closeHistory" class="text-slate-500 hover:text-slate-800 text-2xl">&times;</button>
+            </div>
+            <div id="historyList" class="space-y-3">
+                <!-- Items injected here -->
+            </div>
+            <button id="clearHistoryBtn" class="mt-6 w-full py-2 border border-red-200 text-red-600 rounded hover:bg-red-50 text-sm">Borrar Todo el Historial</button>
         </div>
-      </div>
+    </div>
 
-      <footer class="no-print">
-        <div class="small">Revisar todos los campos antes de imprimir.</div>
-        <div>
-          <button type="button" id="preview">Vista previa / Imprimir</button>
-          <button type="submit" id="save" class="secondary">Guardar (local)</button>
-        </div>
-      </footer>
+    <script>
+        // --- 1. Global Setup & Utilities ---
+        const { jsPDF } = window.jspdf;
+        let uploadedLogoBase64 = null; // Store logo for PDF generation
 
-    </form>
+        // Set default date
+        document.querySelector('input[name="fecha"]').valueAsDate = new Date();
 
-    <div class="print-ready" id="printArea"></div>
-  </div>
+        // --- 2. Dynamic Equipment Fields ---
+        const fieldTemplates = {
+            'pc': `
+                <div class="grid grid-cols-2 gap-2">
+                    <div><label class="text-xs text-slate-500">Procesador</label><input type="text" name="procesador" class="w-full border rounded p-1"></div>
+                    <div><label class="text-xs text-slate-500">RAM</label><input type="text" name="ram" class="w-full border rounded p-1"></div>
+                    <div><label class="text-xs text-slate-500">Almacenamiento</label><input type="text" name="almacenamiento" class="w-full border rounded p-1"></div>
+                    <div><label class="text-xs text-slate-500">GPU</label><input type="text" name="gpu" class="w-full border rounded p-1"></div>
+                    <div><label class="text-xs text-slate-500">Fuente Poder</label><input type="text" name="psu" class="w-full border rounded p-1"></div>
+                    <div><label class="text-xs text-slate-500">Motherboard</label><input type="text" name="motherboard" class="w-full border rounded p-1"></div>
+                </div>
+            `,
+            'laptop': `
+                <div class="grid grid-cols-2 gap-2">
+                    <div><label class="text-xs text-slate-500">Procesador</label><input type="text" name="procesador" class="w-full border rounded p-1"></div>
+                    <div><label class="text-xs text-slate-500">RAM</label><input type="text" name="ram" class="w-full border rounded p-1"></div>
+                    <div><label class="text-xs text-slate-500">Almacenamiento</label><input type="text" name="almacenamiento" class="w-full border rounded p-1"></div>
+                    <div><label class="text-xs text-slate-500">Pantalla</label><input type="text" name="pantalla" class="w-full border rounded p-1"></div>
+                    <div><label class="text-xs text-slate-500">Batería</label><input type="text" name="bateria" class="w-full border rounded p-1"></div>
+                    <div><label class="text-xs text-slate-500">Cargador (V/A)</label><input type="text" name="cargadorInfo" class="w-full border rounded p-1"></div>
+                </div>
+            `,
+            'printer': `
+                 <div class="grid grid-cols-2 gap-2">
+                    <div><label class="text-xs text-slate-500">Tipo Impresión</label><input type="text" name="printerType" placeholder="Laser/Tinta" class="w-full border rounded p-1"></div>
+                    <div><label class="text-xs text-slate-500">Contador</label><input type="text" name="printCounter" class="w-full border rounded p-1"></div>
+                    <div class="col-span-2"><label class="text-xs text-slate-500">Consumibles (Tinta/Toner)</label><input type="text" name="toner" class="w-full border rounded p-1"></div>
+                </div>
+            `,
+            'other': `
+                <div><label class="text-xs text-slate-500">Detalles Técnicos</label><textarea name="otherDetails" rows="3" class="w-full border rounded p-1"></textarea></div>
+            `
+        };
 
-  <script>
-// --- FIRMA TECNICO ---
-function initSignature(canvasId, clearBtnId) {
-  const canvas = document.getElementById(canvasId);
-  const ctx = canvas.getContext("2d");
-  let signing = false;
+        const typeSelect = document.getElementById('tipoEquipoSelect');
+        const dynamicContainer = document.getElementById('dynamicFields');
 
-  canvas.addEventListener("mousedown", e => {
-    signing = true;
-    ctx.beginPath();
-    ctx.moveTo(e.offsetX, e.offsetY);
-  });
+        function updateFields() {
+            const val = typeSelect.value.toLowerCase();
+            dynamicContainer.innerHTML = ''; // clear
+            
+            if (val.includes('pc') || val.includes('escritorio') || val.includes('servidor')) {
+                dynamicContainer.innerHTML = fieldTemplates.pc;
+            } else if (val.includes('port') || val.includes('laptop')) {
+                dynamicContainer.innerHTML = fieldTemplates.laptop;
+            } else if (val.includes('impresora')) {
+                dynamicContainer.innerHTML = fieldTemplates.printer;
+            } else {
+                dynamicContainer.innerHTML = fieldTemplates.other;
+            }
+        }
+        typeSelect.addEventListener('change', updateFields);
+        updateFields(); // Init
 
-  canvas.addEventListener("mousemove", e => {
-    if (!signing) return;
-    ctx.lineTo(e.offsetX, e.offsetY);
-    ctx.stroke();
-  });
+        // --- 3. Logo Upload Handling ---
+        function handleLogoUpload(input) {
+            if (input.files && input.files[0]) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    uploadedLogoBase64 = e.target.result;
+                    document.getElementById('logoPreview').src = uploadedLogoBase64;
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
 
-  canvas.addEventListener("mouseup", () => signing = false);
-  canvas.addEventListener("mouseleave", () => signing = false);
+        // --- 4. Checklist Logic ---
+        document.getElementById('addChkBtn').addEventListener('click', () => {
+            const txt = document.getElementById('newChkText').value.trim();
+            if (!txt) return;
+            
+            const div = document.createElement('label');
+            div.className = 'flex items-center space-x-2 text-sm';
+            div.innerHTML = `
+                <input type="checkbox" name="chk" value="${txt}" data-label="${txt}" checked class="rounded text-blue-600 focus:ring-blue-500">
+                <span>${txt}</span>
+            `;
+            document.getElementById('checklist-container').appendChild(div);
+            document.getElementById('newChkText').value = '';
+        });
 
-  document.getElementById(clearBtnId).addEventListener("click", () => {
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-  });
-}
+        // --- 5. Signature Pad Implementation ---
+        function initSignature(canvasId) {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+            let writing = false;
 
-initSignature("sigTech","clearTech");
-initSignature("sigClient","clearClient");
+            // Resize for High DPI
+            function resize() {
+                const rect = canvas.getBoundingClientRect();
+                const ratio = window.devicePixelRatio || 1;
+                canvas.width = rect.width * ratio;
+                canvas.height = rect.height * ratio;
+                ctx.scale(ratio, ratio);
+                ctx.lineWidth = 2;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.strokeStyle = '#000';
+            }
+            window.addEventListener('resize', resize);
+            setTimeout(resize, 100); // Initial resize
 
-// --- GENERAR PDF ---
-function generarPDF(){
-  const pdf = new jspdf.jsPDF("p","pt","a4");
+            function getPos(e) {
+                const rect = canvas.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                return {
+                    x: clientX - rect.left,
+                    y: clientY - rect.top
+                };
+            }
 
-  // Encabezado con logo
-  const logo = new Image();
-  logo.src = "megatecnology.png";
-  pdf.addImage(logo, "PNG", 20, 10, 120, 40);
-  pdf.setFillColor(13,71,161);
-  pdf.rect(0,0,595,60,"F");
-  pdf.setFontSize(20);
-  pdf.setTextColor(255,255,255);
-  pdf.text("MEGATECNOLOGY - Informe de Mantenimiento", 160, 38);
+            canvas.addEventListener('mousedown', (e) => { writing = true; const p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); });
+            canvas.addEventListener('mouseup', () => writing = false);
+            canvas.addEventListener('mousemove', (e) => { if(!writing) return; const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); });
 
-  pdf.setTextColor(0,0,0);
+            // Touch events
+            canvas.addEventListener('touchstart', (e) => { e.preventDefault(); writing = true; const p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); }, {passive: false});
+            canvas.addEventListener('touchend', (e) => { e.preventDefault(); writing = false; });
+            canvas.addEventListener('touchmove', (e) => { e.preventDefault(); if(!writing) return; const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); }, {passive: false});
 
-  // --- MARCA DE AGUA (LOGO GRANDE) ---
-  try {
-    const watermark = new Image();
-    watermark.src = "megatecnology.png";
-    if (pdf.setGState) {
-      const gs = pdf.GState({ opacity: 0.08 });
-      pdf.setGState(gs);
-    }
-    pdf.addImage(watermark, "PNG", 100, 200, 400, 400);
-    if (pdf.setGState) pdf.setGState(pdf.GState({ opacity: 1 }));
-  } catch (e) { console.error("Marca de agua no soportada", e); }
-(255,255,255);
-  pdf.text("MEGATECNOLOGY - Informe de Mantenimiento", 40, 38);
+            return {
+                clear: () => { ctx.clearRect(0, 0, canvas.width / (window.devicePixelRatio||1), canvas.height / (window.devicePixelRatio||1)); ctx.beginPath(); },
+                isEmpty: () => {
+                    const pixelBuffer = new Uint32Array(ctx.getImageData(0, 0, canvas.width, canvas.height).data.buffer);
+                    return !pixelBuffer.some(color => color !== 0);
+                },
+                toDataURL: () => canvas.toDataURL()
+            };
+        }
 
-  pdf.setTextColor(0,0,0);
-  pdf.setFontSize(12);
-  let y = 90;
+        const sigTech = initSignature('sigTech');
+        const sigClient = initSignature('sigClient');
 
-  const campos = document.querySelectorAll("fieldset");
-  campos.forEach(fs=>{
-    pdf.setFontSize(14);
-    pdf.text(fs.querySelector("legend").innerText, 40, y);
-    y+=20;
+        // --- 6. Form Submission & History ---
+        const historyModal = document.getElementById('historyModal');
+        const historyContent = document.getElementById('historyContent');
+        
+        document.getElementById('btnHistory').addEventListener('click', showHistory);
+        document.getElementById('closeHistory').addEventListener('click', () => historyModal.classList.add('hidden'));
+        document.getElementById('clearHistoryBtn').addEventListener('click', () => {
+            if(confirm('¿Borrar todo el historial?')) { localStorage.removeItem('maint_history_v2'); showHistory(); }
+        });
 
-    const elementos = fs.querySelectorAll("input, select, textarea");
-    elementos.forEach(el=>{
-      if(el.value){
-        pdf.setFontSize(11);
-        pdf.text(`${el.previousElementSibling?.innerText || el.id}: ${el.value}`, 50, y);
-        y+=16;
-      }
-    });
+        function getFormData() {
+            const form = document.getElementById('maintForm');
+            const formData = new FormData(form);
+            const data = {};
+            
+            // Handle duplicate keys (checkboxes)
+            for (const [key, value] of formData.entries()) {
+                if (data[key]) {
+                    if (!Array.isArray(data[key])) data[key] = [data[key]];
+                    data[key].push(value);
+                } else {
+                    data[key] = value;
+                }
+            }
+            return data;
+        }
 
-    y+=10;
-  });
+        document.getElementById('maintForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const data = getFormData();
+            data._id = Date.now();
+            data._dateStr = new Date().toLocaleString();
+            
+            // Save to LocalStorage
+            const history = JSON.parse(localStorage.getItem('maint_history_v2') || '[]');
+            history.unshift(data);
+            localStorage.setItem('maint_history_v2', JSON.stringify(history));
 
-  // Checklist
-  pdf.setFontSize(14);
-  pdf.text("Checklist", 40, y);
-  y+=20;
-  document.querySelectorAll("input[type=checkbox]").forEach(ch=>{
-    pdf.setFontSize(11);
-    const estado = ch.checked ? "✔" : "✘";
-    pdf.text(`${estado}  ${ch.dataset.label}`, 50, y);
-    y+=16;
-  });
+            alert('Guardado exitosamente. Puede encontrarlo en el historial.');
+        });
 
-  // Firmas
-  y+=30;
-  pdf.setFontSize(12);
-  pdf.text("Firma del Técnico", 40, y);
-  const firmaTec = document.getElementById("firmaTecnico");
-  pdf.addImage(firmaTec.toDataURL("image/png"), "PNG", 40, y+10, 200, 100);
+        function showHistory() {
+            const history = JSON.parse(localStorage.getItem('maint_history_v2') || '[]');
+            const list = document.getElementById('historyList');
+            list.innerHTML = '';
+            
+            if (history.length === 0) {
+                list.innerHTML = '<div class="text-center text-slate-400 py-4">No hay registros guardados</div>';
+            } else {
+                history.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'bg-slate-50 p-3 rounded border border-slate-200 cursor-pointer hover:bg-blue-50 transition';
+                    div.innerHTML = `
+                        <div class="font-bold text-blue-900">${item.cliente || 'Sin nombre'}</div>
+                        <div class="text-xs text-slate-500">${item._dateStr} - ${item.tipo || 'General'}</div>
+                    `;
+                    div.onclick = () => loadRecord(item);
+                    list.appendChild(div);
+                });
+            }
+            
+            historyModal.classList.remove('hidden');
+            historyContent.classList.remove('translate-x-full');
+        }
 
-  pdf.text("Firma del Cliente", 300, y);
-  const firmaCli = document.getElementById("firmaCliente");
-  pdf.addImage(firmaCli.toDataURL("image/png"), "PNG", 300, y+10, 200, 100);
+        function loadRecord(data) {
+            // Simple load function - Populate basic fields
+            const form = document.getElementById('maintForm');
+            // Reset form first
+            form.reset();
+            sigTech.clear();
+            sigClient.clear();
+            
+            // Populate inputs
+            Object.keys(data).forEach(key => {
+                const inputs = form.querySelectorAll(`[name="${key}"]`);
+                if (inputs.length > 0) {
+                    if (inputs[0].type === 'radio') {
+                        inputs.forEach(r => { if (r.value === data[key]) r.checked = true; });
+                    } else if (inputs[0].type === 'checkbox') {
+                         // Checkboxes handled separately or simple array check
+                         const vals = Array.isArray(data[key]) ? data[key] : [data[key]];
+                         inputs.forEach(cb => { if (vals.includes(cb.value)) cb.checked = true; });
+                    } else {
+                        inputs[0].value = data[key];
+                    }
+                }
+            });
 
-  pdf.save("mantenimiento_megatecnology.pdf");("mantenimiento.pdf");
-}
-</script>
-      </div>
-</body></html>`;
-    }
+            // Trigger dynamic fields update
+            updateFields();
+            // Re-populate dynamic fields if they exist in data
+            setTimeout(() => {
+                Object.keys(data).forEach(key => {
+                     const dynInput = document.querySelector(`#dynamicFields [name="${key}"]`);
+                     if(dynInput) dynInput.value = data[key];
+                });
+            }, 50);
 
-    function escapeHtml(str){ if(!str) return ''; return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;').replace(/'/g,'&#39;'); }
+            historyModal.classList.add('hidden');
+        }
 
-  </script>
+        // --- 7. PDF Generation Logic (Client Side) ---
+        async function generateDigitalPDF() {
+            const doc = new jsPDF('p', 'mm', 'a4');
+            const data = getFormData();
+            
+            // --- Helper Styles ---
+            const primaryColor = [30, 58, 138]; // Blue 900
+            const greyColor = [100, 116, 139];
+            
+            let y = 20;
+
+            // Logo
+            if (uploadedLogoBase64) {
+                doc.addImage(uploadedLogoBase64, 'PNG', 15, 10, 40, 15); // x, y, w, h
+            } else {
+                doc.setFontSize(22);
+                doc.setTextColor(...primaryColor);
+                doc.text("MEGATECNOLOGY", 15, 20);
+            }
+            
+            doc.setFontSize(10);
+            doc.setTextColor(...greyColor);
+            doc.text("Reporte de Mantenimiento Técnico", 15, 28);
+            
+            doc.setDrawColor(200, 200, 200);
+            doc.line(15, 32, 195, 32);
+            y = 40;
+
+            // Helper to print Key-Value
+            function printField(label, value, x, width) {
+                doc.setFontSize(8);
+                doc.setTextColor(...greyColor);
+                doc.text(label.toUpperCase(), x, y);
+                doc.setFontSize(10);
+                doc.setTextColor(0, 0, 0);
+                const splitText = doc.splitTextToSize(value || "-", width);
+                doc.text(splitText, x, y + 5);
+                return splitText.length * 5; // Return height used
+            }
+
+            // --- Row 1 ---
+            printField("Fecha", data.fecha, 15, 40);
+            printField("Técnico", data.tecnico, 60, 50);
+            printField("Tipo", data.tipo, 120, 40);
+            y += 15;
+
+            // --- Row 2 ---
+            printField("Cliente", data.cliente, 15, 80);
+            printField("Contacto", data.contacto, 105, 80);
+            y += 15;
+
+            // --- Section Header ---
+            y += 5;
+            doc.setFillColor(240, 245, 250);
+            doc.rect(15, y, 180, 8, 'F');
+            doc.setFontSize(10);
+            doc.setTextColor(...primaryColor);
+            doc.setFont(undefined, 'bold');
+            doc.text("DATOS DEL EQUIPO", 18, y + 6);
+            doc.setFont(undefined, 'normal');
+            y += 15;
+
+            // Equipment details
+            printField("Equipo", data.tipoEquipo, 15, 40);
+            printField("Marca", data.marca, 60, 40);
+            printField("Modelo", data.modelo, 105, 40);
+            printField("Serie/ID", data.serie, 150, 40);
+            y += 15;
+
+            // Dynamic stuff
+            let details = "";
+            if (data.procesador) details += `CPU: ${data.procesador} | `;
+            if (data.ram) details += `RAM: ${data.ram} | `;
+            if (data.almacenamiento) details += `HDD/SSD: ${data.almacenamiento} | `;
+            if (data.pantalla) details += `Pantalla: ${data.pantalla} | `;
+            if (data.printerType) details += `Tipo: ${data.printerType} | `;
+            
+            const h = printField("Especificaciones / Detalles", details, 15, 180);
+            y += h + 5;
+
+            printField("Accesorios", data.accesorios, 15, 180);
+            y += 15;
+
+            // --- Section Header ---
+            y += 5;
+            doc.setFillColor(240, 245, 250);
+            doc.rect(15, y, 180, 8, 'F');
+            doc.setFontSize(10);
+            doc.setTextColor(...primaryColor);
+            doc.setFont(undefined, 'bold');
+            doc.text("DIAGNÓSTICO Y SOLUCIÓN", 18, y + 6);
+            doc.setFont(undefined, 'normal');
+            y += 15;
+
+            doc.setTextColor(220, 50, 50);
+            printField("Falla Reportada", data.problema, 15, 180);
+            y += 15;
+
+            printField("Acciones Realizadas", data.acciones, 15, 180);
+            y += 20; // Give space for text wrap
+
+            printField("Repuestos", data.repuestos, 15, 180);
+            y += 15;
+
+            printField("Observaciones", data.observaciones, 15, 180);
+            y += 20;
+
+            // Checklist
+            doc.setFontSize(8);
+            doc.setTextColor(...greyColor);
+            doc.text("CHECKLIST:", 15, y);
+            doc.setFontSize(9);
+            doc.setTextColor(0, 0, 0);
+            
+            let chkText = [];
+            const checkboxes = document.querySelectorAll('input[name="chk"]:checked');
+            checkboxes.forEach(cb => chkText.push("☑ " + cb.dataset.label));
+            
+            doc.text(chkText.join("   "), 35, y);
+            y += 25;
+
+            // Signatures
+            if (y > 240) { doc.addPage(); y = 30; }
+
+            const sigW = 60;
+            const sigH = 30;
+
+            doc.line(15, y + 30, 85, y + 30);
+            doc.text("Firma Técnico", 15, y + 35);
+            if(data.firmaTecnicoNombre) doc.text(data.firmaTecnicoNombre, 15, y + 40);
+            
+            if (!sigTech.isEmpty()) {
+                doc.addImage(sigTech.toDataURL(), 'PNG', 15, y, sigW, sigH);
+            }
+
+            doc.line(115, y + 30, 185, y + 30);
+            doc.text("Firma Cliente", 115, y + 35);
+            if(data.firmaClienteNombre) doc.text(data.firmaClienteNombre, 115, y + 40);
+
+            if (!sigClient.isEmpty()) {
+                doc.addImage(sigClient.toDataURL(), 'PNG', 115, y, sigW, sigH);
+            }
+
+            doc.save(`reporte_${data.cliente || 'megatecnology'}_${Date.now()}.pdf`);
+        }
+    </script>
 </body>
 </html>
-
-
-
-
-
-
-
