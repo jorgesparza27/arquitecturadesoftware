@@ -1,458 +1,296 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simulador de CPU - Arquitectura Clásica</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap');
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #111827;
-            color: #d1d5db;
-        }
-        .mono { font-family: 'Roboto Mono', monospace; }
-        .component {
-            border: 2px solid #4b5563;
-            border-radius: 0.5rem;
-            padding: 0.5rem;
-            background-color: #1f2937;
-            transition: all 0.3s ease-in-out;
-            position: absolute;
-            text-align: center;
-            z-index: 10;
-        }
-        .bus {
-            position: absolute;
-            z-index: 1;
-            transition: background-color 0.3s ease-in-out;
-        }
-        .bus-label {
-            position: absolute;
-            font-weight: bold;
-            z-index: 20;
-            text-shadow: 0 0 5px #111827;
-        }
-        .highlight-component {
-            background-color: #facc15 !important;
-            color: #1f2937 !important;
-            transform: scale(1.05);
-            box-shadow: 0 0 15px #facc15;
-        }
-        
-        /* Bus Colors from reference diagram */
-        .bus-addr { background-color: #8b5cf6; } /* Purple */
-        .bus-data { background-color: #10b981; } /* Green */
-        .bus-ctrl { background-color: #0ea5e9; } /* Light Blue */
-        
-        /* Highlight colors from reference diagram */
-        .highlight-bus-address { background-color: #ef4444 !important; } /* Red */
-        .highlight-bus-data { background-color: #ef4444 !important; } /* Red for data flow */
-        .highlight-bus-control { background-color: #3b82f6 !important; } /* Blue for control flow */
-
-        /* Fix for content visibility when highlighted */
-        .highlight-component * {
-            color: #1f2937 !important;
-        }
-        .highlight-component #memoria-content {
-            background-color: transparent !important;
-        }
-    </style>
+<style>
+ body { font-family: Arial, sans-serif; background:#f5f5f5; padding:20px; }
+ .container { background:white; padding:25px; border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,0.1); max-width:900px; margin:auto; }
+ h1 { text-align:center; color:#1a237e; }
+ fieldset { border:2px solid #1a237e; padding:15px; margin-bottom:20px; border-radius:10px; }
+ legend { font-weight:bold; color:#1a237e; }
+ label { font-weight:bold; }
+ input, select, textarea { width:100%; padding:8px; margin-top:5px; border:1px solid #aaa; border-radius:6px; }
+ .logo { text-align:center; margin-bottom:20px; font-size:28px; font-weight:bold; color:#0d47a1; letter-spacing:2px; }
+ .signature-box { border:1px solid #999; border-radius:8px; background:white; }
+ button { padding:10px 20px; border:none; border-radius:8px; cursor:pointer; font-weight:bold; }
+ .btn-primary { background:#1a237e; color:white; }
+ .btn-secondary { background:#3949ab; color:white; }
+</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Registro de Mantenimiento - Correctivo / Preventivo</title>
+  <style>
+    :root{font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial;--accent:#0b74de}
+    body{margin:0;padding:24px;background:#f4f6f8;color:#111}
+    .container{max-width:980px;margin:0 auto;background:#fff;padding:20px;border-radius:10px;box-shadow:0 6px 20px rgba(12,20,30,0.06)}
+    h1{font-size:20px;margin:0 0 8px}
+    .row{display:flex;gap:12px;flex-wrap:wrap}
+    .col{flex:1;min-width:200px}
+    label{display:block;font-size:13px;margin-bottom:6px}
+    input[type=text],input[type=date],select,textarea{width:100%;padding:8px;border:1px solid #d6dbe0;border-radius:6px;font-size:14px}
+    textarea{min-height:80px;resize:vertical}
+    .radioGroup{display:flex;gap:12px;align-items:center}
+    .card{background:#fbfdff;padding:12px;border-radius:8px;border:1px solid #eef3fb}
+    .checklist{display:flex;flex-direction:column;gap:6px}
+    .small{font-size:13px;color:#444}
+    footer{display:flex;gap:12px;justify-content:space-between;align-items:center;margin-top:16px}
+    button{background:var(--accent);color:#fff;border:none;padding:10px 14px;border-radius:8px;cursor:pointer}
+    button.secondary{background:#eee;color:#222}
+    .sign-wrap{display:flex;gap:16px;align-items:flex-start}
+    .sign-box{flex:1}
+    canvas.signature{width:100%;height:140px;border:1px dashed #bfcbd9;border-radius:6px;background:#fff}
+    .actions{display:flex;gap:8px;flex-wrap:wrap}
+    .meta{font-size:13px;color:#666;margin-bottom:8px}
+    .print-ready{display:none}
+    @media print{body{background:#fff} .container{box-shadow:none;border:none} .no-print{display:none} .print-ready{display:block}}
+  </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
-<body class="p-4 md:p-8">
-    <div class="max-w-7xl mx-auto">
-        <header class="text-center mb-8">
-            <h1 class="text-3xl md:text-4xl font-bold text-white">Simulador de CPU</h1>
-            <p class="text-lg text-gray-400">Visualización de la suma A + B con arquitectura de microprocesador de 16 bits</p>
-        </header>
+<body>
+<div class="logo"><img src="./megatecnology.png" alt="Logo" style="max-width:180px; margin:auto; display:block;"> <br>MEGATECNOLOGY</div>
+<div class="container">
+  <div class="container">
+    <h1>Registro de Mantenimiento</h1>
+    <p class="meta">Formulario para registrar servicios correctivos o preventivos. Imprime o exporta desde el navegador.</p>
 
-        <!-- Controles -->
-        <div class="bg-gray-800 p-4 rounded-lg shadow-lg mb-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <div class="flex items-center gap-2">
-                <label for="valA" class="font-medium text-white">Valor A:</label>
-                <input type="number" id="valA" value="5" class="w-24 bg-gray-700 text-white rounded p-2 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-yellow-400">
-            </div>
-            <div class="flex items-center gap-2">
-                <label for="valB" class="font-medium text-white">Valor B:</label>
-                <input type="number" id="valB" value="3" class="w-24 bg-gray-700 text-white rounded p-2 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-yellow-400">
-            </div>
-            <button id="autoRunBtn" class="w-full sm:w-auto bg-yellow-400 text-gray-900 font-bold py-2 px-6 rounded-lg hover:bg-yellow-300 transition-colors">Ejecución Automática</button>
-            <button id="nextStepBtn" class="w-full sm:w-auto bg-blue-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-400 transition-colors">Siguiente Paso</button>
-            <button id="resetSim" class="w-full sm:w-auto bg-red-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-red-400 transition-colors">Reiniciar</button>
+    <form id="maintForm">
+      <div class="row">
+        <div class="col card">
+          <label>Tipo de mantenimiento</label>
+          <div class="radioGroup">
+            <label><input type="radio" name="tipo" value="Correctivo" checked> Correctivo</label>
+            <label><input type="radio" name="tipo" value="Preventivo"> Preventivo</label>
+          </div>
+
+          <label>Fecha</label>
+          <input type="date" name="fecha" required>
+
+          <label>Técnico</label>
+          <input type="text" name="tecnico" placeholder="Nombre del técnico" required>
+
+          <label>Cliente</label>
+          <input type="text" name="cliente" placeholder="Nombre del cliente / empresa" required>
+
+          <label>Contacto</label>
+          <input type="text" name="contacto" placeholder="Teléfono / correo">
         </div>
 
-        <!-- Layout Principal -->
-        <div class="flex flex-col gap-8">
-            <!-- Diagrama -->
-            <div class="relative w-full border-4 border-gray-700 rounded-xl min-h-[750px] p-4 bg-gray-900 bg-opacity-50">
-                
-                <!-- Contenedor del Microprocesador -->
-                <div class="absolute" style="left: 20%; right: 20%; top: 20px; height: 480px; border: 2px solid #6b7280; border-radius: 1rem; background-color: rgba(31, 41, 55, 0.5);">
-                     <h2 class="absolute top-2 left-4 text-xl font-bold text-gray-500">Microprocesador de 16 bits</h2>
-                </div>
-
-                <!-- COMPONENTES -->
-                <div id="pc" class="component" style="top: 150px; left: 25%;"><h3 class="font-bold">Contador (PC)</h3><p class="mono mt-1">0x1000</p></div>
-                <div id="uc" class="component" style="top: 250px; left: 45%; width: 140px; height: 100px;"><h3 class="font-bold">Unidad Control</h3><h4 class="text-sm text-gray-400">(Decodificador)</h4><p id="uc-opcode-display" class="mono text-yellow-300 mt-1 text-xs">-</p></div>
-                <div id="ri" class="component" style="top: 380px; left: 35%; width: 180px;"><h3 class="font-bold">Registro Inst. (RI)</h3><p class="mono mt-1 text-xs">-</p></div>
-                <div id="acumulador" class="component bg-red-900" style="top: 100px; left: 58%;"><h3 class="font-bold">Acumulador</h3><p class="mono mt-1">0</p></div>
-                <div id="operando2" class="component" style="top: 180px; left: 58%;"><h3 class="font-bold">Operando 2</h3><p class="mono mt-1">0</p></div>
-                <div id="alu" class="component" style="top: 130px; left: 70%; width: 100px; height: 100px;"><h3 class="font-bold text-xl">ALU</h3></div>
-                
-                <div id="memoria" class="component" style="top: 550px; left: 30%; width: 200px; height: 150px;"><h3 class="font-bold">Memoria</h3><div id="memoria-content" class="text-left overflow-y-auto h-28 mt-1 bg-gray-800 p-1 rounded"></div></div>
-                <div id="io" class="component" style="top: 550px; right: 30%;"><h3 class="font-bold">Entradas/Salidas</h3></div>
-                
-                <div id="encoding-table" class="component" style="top: 30px; right: 1%; width: 180px;">
-                    <h3 class="font-bold">Codificación</h3>
-                    <div id="encoding-content-data" class="text-left mono mt-1 text-xs"></div>
-                    <div id="encoding-content-inst" class="text-left mono mt-1 text-xs border-t border-gray-600 pt-1"></div>
-                </div>
-
-                <!-- BUSES Y ETIQUETAS -->
-                <!-- Bus de Direcciones -->
-                <div id="bus-addr-main" class="bus bus-addr" style="left: 15%; top: 170px; width: 8px; height: 408px;"></div>
-                <div id="bus-addr-pc-conn" class="bus bus-addr" style="top: 170px; left: 15%; width: 10%; height: 8px;"></div>
-                <div id="bus-addr-ext-conn" class="bus bus-addr" style="top: 570px; left: 15%; width: 55%; height: 8px;"></div>
-                <p class="bus-label text-red-500" style="top: 140px; left: 14%;">Dirección</p>
-                <p class="bus-label" style="top: 370px; left: 11%; transform: rotate(-90deg); color: #a78bfa;">BUS DE DIRECCIONES</p>
-
-                <!-- Bus de Datos -->
-                <div id="bus-data-main" class="bus bus-data" style="left: 30%; top: 260px; width: 8px; height: 348px;"></div>
-                <div id="bus-data-internal-horz" class="bus bus-data" style="top: 260px; left: 30%; width: 25%; height: 8px;"></div>
-                <div id="bus-data-internal-vert" class="bus bus-data" style="left: 55%; top: 100px; width: 8px; height: 168px;"></div>
-                <div id="bus-data-ri-conn" class="bus bus-data" style="top: 400px; left: 30%; width: 5%; height: 8px;"></div>
-                <div id="bus-data-acum-conn" class="bus bus-data" style="top: 120px; left: 55%; width: 3%; height: 8px;"></div>
-                <div id="bus-data-op2-conn" class="bus bus-data" style="top: 200px; left: 55%; width: 3%; height: 8px;"></div>
-                <div id="bus-data-alu-conn" class="bus bus-data" style="top: 170px; left: 55%; width: 15%; height: 8px;"></div>
-                <div id="bus-data-ext-conn" class="bus bus-data" style="top: 600px; left: 30%; width: 33%; height: 8px;"></div>
-                <p class="bus-label text-red-500" style="top: 480px; left: 25%;">Datos</p>
-                <p class="bus-label" style="top: 450px; left: 26%; transform: rotate(-90deg); color: #34d399;">BUS DE DATOS</p>
-                
-                <!-- Bus de Control -->
-                <div id="bus-control-main" class="bus bus-ctrl" style="right: 15%; top: 300px; width: 8px; height: 338px;"></div>
-                <div id="bus-control-uc-conn" class="bus bus-ctrl" style="top: 300px; left: 59%; right: 15%; height: 8px;"></div>
-                <div id="bus-control-ext-conn" class="bus bus-ctrl" style="top: 630px; left: 50%; right: 15%; height: 8px;"></div>
-                <p class="bus-label" style="top: 480px; right: 16%; transform: rotate(-90deg); color: #38bdf8;">BUS DE CONTROL</p>
+        <div class="col card">
+          <label>Datos del equipo</label>
+          <div class="row">
+            <div class="col">
+              <label>Tipo</label>
+              <select name="tipoEquipo">
+                <option>PC de escritorio</option>
+                <option>Portátil</option>
+                <option>Servidor</option>
+                <option>Impresora</option>
+                <option>Otro</option>
+              </select>
             </div>
-
-            <!-- Log -->
-            <div id="log" class="component w-full min-h-[300px] bg-gray-900 p-4 overflow-y-auto" style="position: relative; top: 0; left: 0;">
-                <h2 class="text-xl font-bold text-white mb-4 border-b border-gray-700 pb-2">Registro de Simulación</h2>
-                <div id="log-content"><p class="text-gray-500">Esperando inicio...</p></div>
+            <div class="col">
+              <label>Marca</label>
+              <input type="text" name="marca">
             </div>
+            <div class="col">
+              <label>Modelo</label>
+              <input type="text" name="modelo">
+            </div>
+          </div>
+
+          <label>Número de serie / Inventario</label>
+          <input type="text" name="serie">
+
+          <label>Problema reportado</label>
+          <textarea name="problema"></textarea>
+
         </div>
-    </div>
+      </div>
 
-    <script>
-        // --- DOM Elements ---
-        const autoRunBtn = document.getElementById('autoRunBtn');
-        const nextStepBtn = document.getElementById('nextStepBtn');
-        const resetBtn = document.getElementById('resetSim');
-        const valAInput = document.getElementById('valA');
-        const valBInput = document.getElementById('valB');
-        const logContent = document.getElementById('log-content');
-        const encodingContentData = document.getElementById('encoding-content-data');
-        const encodingContentInst = document.getElementById('encoding-content-inst');
-        const pcEl = document.getElementById('pc'), riEl = document.getElementById('ri'), ucEl = document.getElementById('uc'), aluEl = document.getElementById('alu'), acumuladorEl = document.getElementById('acumulador'), operando2El = document.getElementById('operando2'), memoriaEl = document.getElementById('memoria-content');
-        const ucOpcodeDisplay = document.getElementById('uc-opcode-display');
+      <div style="height:12px"></div>
 
-        // --- Simulation State & Config ---
-        let memory = {};
-        const ADDR_A = '0x0001', ADDR_B = '0x0002', ADDR_RESULT = '0x0003', PROG_START = 0x1000, SIM_SPEED = 750;
-        let stepQueue = [];
-        let isAutoRunning = false;
-        
-        const program = [
-            { addr: '0x1000', inst: 'LOAD_A', opcode: '0001', hexcode: '0x1', val: ADDR_A },
-            { addr: '0x1001', inst: 'ADD',    opcode: '0010', hexcode: '0x2', val: ADDR_B },
-            { addr: '0x1002', inst: 'STORE',  opcode: '0011', hexcode: '0x3', val: ADDR_RESULT },
-            { addr: '0x1003', inst: 'HALT',   opcode: '1111', hexcode: '0xF', val: null }
-        ];
+      <div class="card">
+        <label>Acciones realizadas</label>
+        <textarea name="acciones" placeholder="Describir pasos realizados, pruebas y resultados" required></textarea>
 
-        // --- Functions ---
-        function to16BitBinary(num) {
-            return num.toString(2).padStart(16, '0');
-        }
-        function updateDataEncodingTable() {
-            const valA = parseInt(valAInput.value, 10) || 0;
-            const valB = parseInt(valBInput.value, 10) || 0;
-            encodingContentData.innerHTML = `
-                <b>Datos:</b>
-                <p>Valor A (${valA}): ${to16BitBinary(valA)}</p>
-                <p>Valor B (${valB}): ${to16BitBinary(valB)}</p>
-            `;
-        }
-        function updateInstructionEncodingTable() {
-            encodingContentInst.innerHTML = '<b>Instrucciones (Opcode):</b>';
-            program.forEach(p => {
-                if (p.inst) {
-                    encodingContentInst.innerHTML += `<p>${p.inst}: ${p.hexcode} (${p.opcode})</p>`;
-                }
-            });
-        }
+        <label>Repuestos / materiales usados</label>
+        <input type="text" name="repuestos" placeholder="Ej: fuente 500W, pasta térmica, SSD 256GB">
 
-        function setupMemory() {
-            memory = {};
-            // Initialize a block of data memory with zeros
-            for (let i = 0; i < 16; i++) {
-                const addr = '0x' + i.toString(16).padStart(4, '0');
-                memory[addr] = 0;
-            }
-            
-            memory[ADDR_A] = parseInt(valAInput.value, 10) || 0;
-            memory[ADDR_B] = parseInt(valBInput.value, 10) || 0;
-            memory[ADDR_RESULT] = 0;
-            program.forEach(p => { memory[p.addr] = p; });
-            renderMemory();
-            updateDataEncodingTable();
-            updateInstructionEncodingTable();
-        }
-        function renderMemory() {
-            memoriaEl.innerHTML = '';
-            const allAddresses = Object.keys(memory).sort((a, b) => parseInt(a, 16) - parseInt(b, 16));
+        <label>Observaciones</label>
+        <textarea name="observaciones"></textarea>
+      </div>
 
-            const dataAddresses = allAddresses.filter(addr => parseInt(addr, 16) < PROG_START);
-            const programAddresses = allAddresses.filter(addr => parseInt(addr, 16) >= PROG_START);
+      <div style="height:12px"></div>
 
-            dataAddresses.forEach(addr => {
-                 const val = memory[addr];
-                 const displayVal = typeof val === 'object' ? val.inst : val;
-                 memoriaEl.innerHTML += `<div id="mem-${addr}" class="mono p-1 rounded text-xs"><b>${addr}:</b> ${displayVal}</div>`;
-            });
-             memoriaEl.innerHTML += `<div class="my-1 border-t border-gray-700"></div>`; // Separator
-            programAddresses.forEach(addr => {
-                 const val = memory[addr];
-                 const displayVal = typeof val === 'object' ? val.inst : val;
-                 memoriaEl.innerHTML += `<div id="mem-${addr}" class="mono p-1 rounded text-xs"><b>${addr}:</b> ${displayVal}</div>`;
-            });
-        }
-        function updateRegister(el, value) { el.querySelector('p').textContent = value; }
-        function addLog(message, isStep = true) {
-            const stepPrefix = isStep ? `<b>[Paso ${logContent.children.length + 1}]</b> ` : '';
-            logContent.innerHTML += `<p class="mb-2 p-2 bg-gray-800 rounded-md shadow">${stepPrefix}${message}</p>`;
-            logContent.scrollTop = logContent.scrollHeight;
-        }
+      <div class="card">
+        <label>Checklist</label>
+        <div class="checklist" id="checklist">
+          <label><input type="checkbox" name="chk" value="Encendido y prueba"> Encendido y prueba</label>
+          <label><input type="checkbox" name="chk" value="Limpieza interna"> Limpieza interna</label>
+          <label><input type="checkbox" name="chk" value="Actualización de drivers/OS"> Actualización de drivers/OS</label>
+          <label><input type="checkbox" name="chk" value="Backup de datos"> Backup de datos</label>
+          <label><input type="checkbox" name="chk" value="Prueba de red y conectividad"> Prueba de red y conectividad</label>
+        </div>
+        <div style="margin-top:8px" class="row">
+          <input type="text" id="newChkText" placeholder="Agregar elemento" class="col">
+          <button type="button" class="secondary" id="addChk">Agregar</button>
+        </div>
+      </div>
 
-        const busPaths = {
-            address: ['bus-addr-main', 'bus-addr-pc-conn', 'bus-addr-ext-conn'],
-            data: ['bus-data-main', 'bus-data-internal-horz', 'bus-data-internal-vert', 'bus-data-ri-conn', 'bus-data-alu-conn', 'bus-data-ext-conn', 'bus-data-acum-conn', 'bus-data-op2-conn'],
-            control: ['bus-control-main', 'bus-control-uc-conn', 'bus-control-ext-conn']
-        };
-        function highlight(elements, type) {
-            const highlightClass = `highlight-bus-${type}`;
-            elements.forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.classList.add(highlightClass);
-            });
-        }
-        function highlightComponent(ids) {
-            ids.forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.classList.add('highlight-component');
-            });
-        }
+      <div style="height:12px"></div>
 
-        function unhighlightAll() {
-            const classes = ['highlight-component', 'highlight-bus-address', 'highlight-bus-data', 'highlight-bus-control'];
-            document.querySelectorAll('.' + classes.join(', .')).forEach(el => el.classList.remove(...classes));
-        }
-        
-        function addStep(logMessage, actionFn, keepHighlights = false) {
-            stepQueue.push(async () => {
-                if (!keepHighlights) {
-                    unhighlightAll();
-                }
-                addLog(logMessage);
-                if (actionFn) actionFn();
-            });
-        }
-        
-        function getMachineCode(instruction) {
-             if (instruction.inst === 'HALT') {
-                return instruction.opcode.padEnd(16, '0');
-            }
-            const addrHex = instruction.val.substring(2);
-            const addrInt = parseInt(addrHex, 16);
-            const addrBinary = addrInt.toString(2).padStart(12, '0');
-            return instruction.opcode + addrBinary;
-        }
+      <div class="card">
+        <label>Firmas</label>
+        <div class="sign-wrap">
+          <div class="sign-box">
+            <div class="small">Firma del técnico</div>
+            <canvas id="sigTech" class="signature"></canvas>
+            <div class="actions no-print" style="margin-top:8px">
+              <button type="button" id="clearTech" class="secondary">Borrar</button>
+            </div>
+            <input type="text" name="firmaTecnicoNombre" placeholder="Nombre (firma)" style="margin-top:8px">
+          </div>
 
-        function prepareSimulation() {
-            stepQueue = [];
-            let tempPC = PROG_START;
-            let tempAcumulador = 0;
-            setupMemory(); 
+          <div class="sign-box">
+            <div class="small">Firma del cliente</div>
+            <canvas id="sigClient" class="signature"></canvas>
+            <div class="actions no-print" style="margin-top:8px">
+              <button type="button" id="clearClient" class="secondary">Borrar</button>
+            </div>
+            <input type="text" name="firmaClienteNombre" placeholder="Nombre (firma)" style="margin-top:8px">
+          </div>
+        </div>
+      </div>
 
-            for(const instruction of program) {
-                 if (instruction.inst === 'HALT') {
-                    addStep("✅ **FIN:** El programa ha terminado. El resultado final está resaltado en la memoria.", () => {
-                        disableButtons();
-                    }, true); // Keep final highlight
-                    break;
-                }
-                const currentPCStr = `0x${tempPC.toString(16)}`;
-                const operandAddr = instruction.val;
-                const machineCode = getMachineCode(instruction);
-                
-                // --- ETAPA 1: LECTURA (FETCH) ---
-                 addStep(`<b>1. Lectura (Fetch):</b> El procesador busca en memoria la instrucción indicada por el PC (${currentPCStr}).`, () => {
-                    updateRegister(pcEl, currentPCStr);
-                    highlight([...busPaths.address], 'address');
-                    highlightComponent(['pc', 'memoria']);
-                });
-                addStep(`... 🧩 El código máquina (<span class="mono">${machineCode}</span>) pasa al Registro de Instrucción (RI).`, () => {
-                    highlight([...busPaths.data], 'data');
-                    highlightComponent(['memoria', 'ri']);
-                    updateRegister(riEl, machineCode);
-                    ucOpcodeDisplay.textContent = '-';
-                });
-                
-                // --- ETAPA 2: DECODIFICACIÓN (DECODE) ---
-                addStep(`<b>2. Decodificación (Decode):</b> ⚙️ La UC interpreta el código máquina del RI.`, () => {
-                    highlightComponent(['uc', 'ri']);
-                    ucOpcodeDisplay.textContent = machineCode;
-                });
+      <footer class="no-print">
+        <div class="small">Revisar todos los campos antes de imprimir.</div>
+        <div>
+          <button type="button" id="preview">Vista previa / Imprimir</button>
+          <button type="submit" id="save" class="secondary">Guardar (local)</button>
+        </div>
+      </footer>
 
-                // --- ETAPA 3: INCREMENTO DEL PC ---
-                addStep(`<b>3. Incremento del PC (PC++):</b> 🔢 El PC incrementa su valor para apuntar a la siguiente instrucción.`, () => {
-                    highlightComponent(['pc']);
-                    updateRegister(pcEl, `0x${(tempPC + 1).toString(16)}`);
-                });
+    </form>
 
-                // --- ETAPA 4: EJECUCIÓN (EXECUTE) ---
-                addStep(`<b>4. Ejecución (Execute):</b> 📤 Se ejecuta la instrucción "${instruction.inst}".`, () => {
-                    highlightComponent(['uc']);
-                    highlight([...busPaths.control], 'control');
-                });
+    <div class="print-ready" id="printArea"></div>
+  </div>
 
-                switch (instruction.inst) {
-                    case 'LOAD_A':
-                        const valA = memory[operandAddr];
-                        addStep(`... La UC usa la dirección ${operandAddr} para buscar el dato en Memoria.`, () => {
-                            highlight([...busPaths.address], 'address');
-                            highlightComponent(['uc', 'memoria']);
-                        });
-                        addStep(`... El valor (${valA}), representado como <code>${to16BitBinary(valA)}</code>, viaja de la Memoria al Acumulador.`, () => {
-                            highlight([...busPaths.data], 'data');
-                            highlightComponent(['memoria', 'acumulador']);
-                            tempAcumulador = valA;
-                            updateRegister(acumuladorEl, tempAcumulador);
-                        });
-                        break;
-                    case 'ADD':
-                         const valB = memory[operandAddr];
-                         addStep(`... La UC usa la dirección ${operandAddr} para buscar el dato en Memoria.`, () => {
-                            highlight([...busPaths.address], 'address');
-                            highlightComponent(['uc', 'memoria']);
-                        });
-                        addStep(`... El valor (${valB}), representado como <code>${to16BitBinary(valB)}</code>, viaja de la Memoria al Operando 2.`, () => {
-                            highlight([...busPaths.data], 'data');
-                            highlightComponent(['memoria', 'operando2']);
-                            updateRegister(operando2El, valB);
-                        });
-                        addStep(`... La ALU suma Acumulador (${tempAcumulador}) y Operando 2 (${valB}).`, () => {
-                           highlightComponent(['acumulador', 'operando2', 'alu']);
-                        });
-                        addStep(`... El resultado (${Number(tempAcumulador) + Number(valB)}) se guarda en el Acumulador.`, () => {
-                            tempAcumulador = Number(tempAcumulador) + Number(valB);
-                            highlight([...busPaths.data], 'data');
-                            highlightComponent(['alu', 'acumulador']);
-                            updateRegister(acumuladorEl, tempAcumulador);
-                        });
-                        break;
-                    case 'STORE':
-                        const result = tempAcumulador;
-                        addStep(`... El Acumulador pone el resultado (${result}), representado como <code>${to16BitBinary(result)}</code>, en el Bus de Datos.`, () => {
-                             highlight([...busPaths.data], 'data');
-                             highlightComponent(['acumulador', 'memoria']);
-                        });
-                        addStep(`... La UC envía la dirección de destino (${operandAddr}) y la señal de 'escribir'.`, () => {
-                             highlight([...busPaths.address, ...busPaths.control], 'control');
-                             highlight([...busPaths.address], 'address');
-                             highlightComponent(['uc', 'memoria']);
-                            memory[ADDR_RESULT] = tempAcumulador;
-                            renderMemory();
-                            document.getElementById('mem-' + ADDR_RESULT).classList.add('highlight-component');
-                        });
-                        break;
-                }
-                tempPC++;
-            }
-        }
-        
-        function ensureSimulationIsPrepared() {
-            if (stepQueue.length === 0) {
-                logContent.innerHTML = ''; 
-                prepareSimulation();
-            }
-        }
+  <script>
+// --- FIRMA TECNICO ---
+function initSignature(canvasId, clearBtnId) {
+  const canvas = document.getElementById(canvasId);
+  const ctx = canvas.getContext("2d");
+  let signing = false;
 
-        async function executeNextStep() {
-            ensureSimulationIsPrepared();
-            if (stepQueue.length > 0) {
-                nextStepBtn.disabled = true;
-                const step = stepQueue.shift();
-                await step();
-                if (stepQueue.length > 0) {
-                    nextStepBtn.disabled = false;
-                } else {
-                    disableButtons();
-                }
-            }
-        }
-        
-        async function autoRun() {
-            ensureSimulationIsPrepared();
-            isAutoRunning = true;
-            disableButtons(true);
-            while(isAutoRunning && stepQueue.length > 0) {
-                const step = stepQueue.shift();
-                await step();
-                await new Promise(resolve => setTimeout(resolve, SIM_SPEED));
-            }
-            if (stepQueue.length === 0) {
-                 disableButtons();
-            }
-        }
-        
-        function disableButtons(autoRunning = false){
-            autoRunBtn.disabled = true;
-            nextStepBtn.disabled = true;
-            if(autoRunning) resetBtn.disabled = true;
-        }
+  canvas.addEventListener("mousedown", e => {
+    signing = true;
+    ctx.beginPath();
+    ctx.moveTo(e.offsetX, e.offsetY);
+  });
 
-        function resetState() {
-             isAutoRunning = false;
-             stepQueue = []; 
-             unhighlightAll();
-             
-             updateRegister(pcEl, `0x${PROG_START.toString(16)}`);
-             updateRegister(riEl, '-');
-             updateRegister(acumuladorEl, '0');
-             updateRegister(operando2El, '0');
-             ucOpcodeDisplay.textContent = '-';
-             logContent.innerHTML = '<p class="text-gray-500" style="text-align: center;">Presiona "Siguiente Paso" o "Ejecución Automática"</p>';
-             
-             setupMemory();
-             
-             autoRunBtn.disabled = false;
-             nextStepBtn.disabled = false;
-             resetBtn.disabled = false;
-        }
-        
-        // --- Event Listeners ---
-        autoRunBtn.addEventListener('click', autoRun);
-        nextStepBtn.addEventListener('click', executeNextStep);
-        resetBtn.addEventListener('click', resetState);
-        valAInput.addEventListener('input', resetState);
-        valBInput.addEventListener('input', resetState);
-        
-        // --- Initial Setup ---
-        resetState();
-    </script>
+  canvas.addEventListener("mousemove", e => {
+    if (!signing) return;
+    ctx.lineTo(e.offsetX, e.offsetY);
+    ctx.stroke();
+  });
+
+  canvas.addEventListener("mouseup", () => signing = false);
+  canvas.addEventListener("mouseleave", () => signing = false);
+
+  document.getElementById(clearBtnId).addEventListener("click", () => {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+  });
+}
+
+initSignature("sigTech","clearTech");
+initSignature("sigClient","clearClient");
+
+// --- GENERAR PDF ---
+function generarPDF(){
+  const pdf = new jspdf.jsPDF("p","pt","a4");
+
+  // Encabezado con logo
+  const logo = new Image();
+  logo.src = "megatecnology.png";
+  pdf.addImage(logo, "PNG", 20, 10, 120, 40);
+  pdf.setFillColor(13,71,161);
+  pdf.rect(0,0,595,60,"F");
+  pdf.setFontSize(20);
+  pdf.setTextColor(255,255,255);
+  pdf.text("MEGATECNOLOGY - Informe de Mantenimiento", 160, 38);
+
+  pdf.setTextColor(0,0,0);
+
+  // --- MARCA DE AGUA (LOGO GRANDE) ---
+  try {
+    const watermark = new Image();
+    watermark.src = "megatecnology.png";
+    if (pdf.setGState) {
+      const gs = pdf.GState({ opacity: 0.08 });
+      pdf.setGState(gs);
+    }
+    pdf.addImage(watermark, "PNG", 100, 200, 400, 400);
+    if (pdf.setGState) pdf.setGState(pdf.GState({ opacity: 1 }));
+  } catch (e) { console.error("Marca de agua no soportada", e); }
+(255,255,255);
+  pdf.text("MEGATECNOLOGY - Informe de Mantenimiento", 40, 38);
+
+  pdf.setTextColor(0,0,0);
+  pdf.setFontSize(12);
+  let y = 90;
+
+  const campos = document.querySelectorAll("fieldset");
+  campos.forEach(fs=>{
+    pdf.setFontSize(14);
+    pdf.text(fs.querySelector("legend").innerText, 40, y);
+    y+=20;
+
+    const elementos = fs.querySelectorAll("input, select, textarea");
+    elementos.forEach(el=>{
+      if(el.value){
+        pdf.setFontSize(11);
+        pdf.text(`${el.previousElementSibling?.innerText || el.id}: ${el.value}`, 50, y);
+        y+=16;
+      }
+    });
+
+    y+=10;
+  });
+
+  // Checklist
+  pdf.setFontSize(14);
+  pdf.text("Checklist", 40, y);
+  y+=20;
+  document.querySelectorAll("input[type=checkbox]").forEach(ch=>{
+    pdf.setFontSize(11);
+    const estado = ch.checked ? "✔" : "✘";
+    pdf.text(`${estado}  ${ch.dataset.label}`, 50, y);
+    y+=16;
+  });
+
+  // Firmas
+  y+=30;
+  pdf.setFontSize(12);
+  pdf.text("Firma del Técnico", 40, y);
+  const firmaTec = document.getElementById("firmaTecnico");
+  pdf.addImage(firmaTec.toDataURL("image/png"), "PNG", 40, y+10, 200, 100);
+
+  pdf.text("Firma del Cliente", 300, y);
+  const firmaCli = document.getElementById("firmaCliente");
+  pdf.addImage(firmaCli.toDataURL("image/png"), "PNG", 300, y+10, 200, 100);
+
+  pdf.save("mantenimiento_megatecnology.pdf");("mantenimiento.pdf");
+}
+</script>
+      </div>
+</body></html>`;
+    }
+
+    function escapeHtml(str){ if(!str) return ''; return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;').replace(/'/g,'&#39;'); }
+
+  </script>
 </body>
 </html>
+
 
 
 
